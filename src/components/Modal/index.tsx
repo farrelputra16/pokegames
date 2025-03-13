@@ -9,8 +9,9 @@ interface IModal extends HTMLAttributes<HTMLDivElement> {
   solid?: boolean;
 }
 
-const Overlay = styled("div")(({ overlay = "dark", open = false, solid = false }: IModal) => ({
-  position: "fixed",
+// Tambahkan tipe IModal ke styled component
+const Overlay = styled("div")<IModal>(({ overlay = "dark", open = false, solid = false }) => ({
+  position: "fixed" as const, // Gunakan 'as const' untuk tipe literal
   inset: 0,
   width: "100vw",
   height: "100vh",
@@ -24,15 +25,16 @@ const Overlay = styled("div")(({ overlay = "dark", open = false, solid = false }
   zIndex: open ? 50 : 0,
 }));
 
-const Content = styled("div")(({ open = false }: IModal) => ({
-  position: "fixed",
+// Tambahkan tipe IModal ke styled component
+const Content = styled("div")<IModal>(({ open = false }) => ({
+  position: "fixed" as const, // Gunakan 'as const' untuk tipe literal
   inset: 0,
   width: "100vw",
   height: "100vh",
   zIndex: open ? 50 : 0,
   "> div": {
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "column" as const, // Gunakan 'as const' untuk tipe literal
     alignItems: "center",
     justifyContent: "center",
     height: "100vh",

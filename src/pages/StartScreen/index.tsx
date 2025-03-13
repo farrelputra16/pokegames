@@ -32,10 +32,10 @@ const StartScreen: React.FC = () => {
           alignItems: "center",
           gap: "5px",
         }}>
-        <Text variant="outlined">&copy;{new Date().getFullYear()} radespratama</Text>
+        <Text variant="outlined">&copy;{new Date().getFullYear()} Jiggly da Dev</Text>
         <Text variant="outlined">
           | Want to contribute?{" "}
-          <T.A href="https://github.com/radespratama/pokegames" target="_blank">
+          <T.A href="" target="_blank">
             GitHub
           </T.A>
         </Text>
