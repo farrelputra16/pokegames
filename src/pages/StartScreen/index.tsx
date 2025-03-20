@@ -12,16 +12,13 @@ const StartScreen: React.FC = () => {
     <T.Container>
       <T.Centering>
         <Text as="h1" variant="outlined" size="xl">
-          POKEGAMES
+          POKEDEX
         </Text>
         <Button onClick={() => navigate("/pokemons")} variant="light">
           Press Start
         </Button>
         <Text variant="outlined" size="base">
-          Source API{" "}
-          <T.A href="https://pokeapi.co" target="_blank">
-            here
-          </T.A>
+          CA : (Coming Soon){" "}
         </Text>
       </T.Centering>
       <div
@@ -32,11 +29,11 @@ const StartScreen: React.FC = () => {
           alignItems: "center",
           gap: "5px",
         }}>
-        <Text variant="outlined">&copy;{new Date().getFullYear()} Jiggly da Dev</Text>
+        <Text variant="outlined">&copy;{new Date().getFullYear()} Farrel the Dev</Text>
         <Text variant="outlined">
-          | Want to contribute?{" "}
+          | FIND US ON PUMP?{" "}
           <T.A href="" target="_blank">
-            GitHub
+            PUMPFUN
           </T.A>
         </Text>
       </div>
