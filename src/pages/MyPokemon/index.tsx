@@ -1,12 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { createRef, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
 import { IMyPokemon } from "../../types/pokemon";
 import { useGlobalContext } from "../../context";
 import { generatePokeSummary, loadMyPokemonFromLocalStorage } from "../../helpers";
 import { Button, Navbar, Text, Modal, PokeCard, DeleteButton } from "../../components";
-
+import PokemonChatbot from "./PokemonChatbot";
 import * as T from "./index.style";
 
 const MyPokemon: React.FC = () => {
@@ -30,7 +29,6 @@ const MyPokemon: React.FC = () => {
   function releasePokemon(nickname: string) {
     const newCollection = pokemons.filter((pokemon: IMyPokemon) => pokemon.nickname !== nickname);
     localStorage.setItem("pokegames@myPokemon", JSON.stringify(newCollection));
-
     loadMyPokemon();
     setState({ pokeSummary: generatePokeSummary(newCollection) });
   }
@@ -44,14 +42,14 @@ const MyPokemon: React.FC = () => {
             <br />
             <Text>You'll have to catch another one and cannot undo this action</Text>
           </div>
-
           <div>
             <Button
               variant="light"
               onClick={() => {
                 releasePokemon(selectedPokemon);
                 setDeleteConfirmation(false);
-              }}>
+              }}
+            >
               Release
             </Button>
             <Button onClick={() => setDeleteConfirmation(false)}>Back</Button>
@@ -81,6 +79,7 @@ const MyPokemon: React.FC = () => {
                         setDeleteConfirmation(true);
                       }}
                     />
+                    {/* Tombol Chat dihapus dari sini */}
                   </PokeCard>
                 </T.WrapperCardList>
               ))}
@@ -96,6 +95,9 @@ const MyPokemon: React.FC = () => {
       </T.Page>
 
       <Navbar ref={navRef} />
+
+      {/* Chatbot selalu muncul dengan daftar pokemons */}
+      <PokemonChatbot pokemons={pokemons} />
     </>
   );
 };
