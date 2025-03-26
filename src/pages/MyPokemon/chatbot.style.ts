@@ -4,8 +4,8 @@ export const PokeballContainer = styled("div")({
   position: "fixed",
   bottom: "20px",
   right: "20px",
-  width: "100px", // Ukuran diperbesar dari 60px ke 100px
-  height: "100px", // Ukuran diperbesar dari 60px ke 100px
+  width: "100px", // Ukuran awal untuk desktop
+  height: "100px",
   cursor: "pointer",
   zIndex: 1000,
   img: {
@@ -14,19 +14,26 @@ export const PokeballContainer = styled("div")({
     objectFit: "contain",
   },
   "&:hover": {
-    transform: "scale(1.1)", // Efek hover tetap ada
+    transform: "scale(1.1)",
+  },
+  // Responsif untuk HP
+  "@media (max-width: 640px)": {
+    width: "60px", // Kecilkan di layar HP
+    height: "60px",
+    bottom: "10px", // Dekatkan ke bawah agar tidak terpotong
+    right: "10px",
   },
 });
 
 export const PokeballBubble = styled("div")({
   position: "absolute",
-  top: "-50px", // Disesuaikan agar bubble tidak bertabrakan dengan Pokeball besar
-  right: "110px", // Disesuaikan agar bubble tetap di samping kiri Pokeball besar
-  padding: "8px 12px", // Sedikit diperbesar untuk proporsi
+  top: "-50px",
+  right: "110px",
+  padding: "8px 12px",
   background: "#fff",
   border: "2px solid #000",
   borderRadius: "15px",
-  fontSize: "14px", // Font sedikit diperbesar untuk keseimbangan
+  fontSize: "14px",
   fontWeight: "bold",
   color: "#333",
   whiteSpace: "nowrap",
@@ -43,26 +50,44 @@ export const PokeballBubble = styled("div")({
     right: "-10px",
     transform: "translateY(-50%)",
   },
+  // Responsif untuk HP
+  "@media (max-width: 640px)": {
+    top: "-40px", // Sesuaikan posisi bubble
+    right: "70px",
+    fontSize: "12px", // Kecilkan teks
+    padding: "5px 8px",
+  },
 });
 
-// Styling lainnya tetap sama
 export const ChatbotContainer = styled("div")({
   position: "fixed",
   bottom: "20px",
   right: "20px",
-  width: "400px",
-  height: "450px",
+  width: "400px", // Desktop
+  maxWidth: "90vw", // Maksimum 90% lebar layar di HP
+  height: "450px", // Desktop
+  maxHeight: "80vh", // Maksimum 80% tinggi layar di HP
   background: "#fff",
   border: "2px solid #000",
   borderRadius: "15px",
   boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
   zIndex: 1000,
   overflow: "hidden",
+  // Responsif untuk HP
+  "@media (max-width: 640px)": {
+    width: "90vw", // Gunakan hampir seluruh lebar layar
+    height: "70vh", // Kurangi tinggi agar tidak terpotong
+    bottom: "10px",
+    right: "10px",
+  },
 });
 
 export const ChatbotWrapper = styled("div")({
   display: "flex",
   height: "100%",
+  "@media (max-width: 640px)": {
+    flexDirection: "column", // Ubah menjadi vertikal di HP
+  },
 });
 
 export const PokemonImage = styled("div")({
@@ -76,6 +101,17 @@ export const PokemonImage = styled("div")({
     width: "100px",
     height: "100px",
     objectFit: "contain",
+  },
+  // Responsif untuk HP
+  "@media (max-width: 640px)": {
+    width: "100%", // Lebar penuh di atas
+    height: "100px",
+    borderRight: "none",
+    borderBottom: "2px solid #000",
+    img: {
+      width: "80px", // Kecilkan gambar di HP
+      height: "80px",
+    },
   },
 });
 
@@ -96,6 +132,12 @@ export const ChatbotHeader = styled("div")({
     fontWeight: "bold",
     color: "#333",
   },
+  "@media (max-width: 640px)": {
+    padding: "8px",
+    span: {
+      fontSize: "12px", // Kecilkan teks di HP
+    },
+  },
 });
 
 export const CloseButton = styled("button")({
@@ -114,6 +156,12 @@ export const CloseButton = styled("button")({
   "&:hover": {
     background: "#cc0000",
   },
+  "@media (max-width: 640px)": {
+    width: "18px",
+    height: "18px",
+    fontSize: "10px",
+    lineHeight: "18px",
+  },
 });
 
 export const ChatbotSelector = styled("div")({
@@ -127,6 +175,13 @@ export const ChatbotSelector = styled("div")({
     background: "#fff",
     fontSize: "14px",
   },
+  "@media (max-width: 640px)": {
+    padding: "8px",
+    select: {
+      fontSize: "12px", // Kecilkan teks di HP
+      padding: "4px",
+    },
+  },
 });
 
 export const ChatbotMessages = styled("div")({
@@ -134,12 +189,18 @@ export const ChatbotMessages = styled("div")({
   padding: "10px",
   overflowY: "auto",
   background: "#f9f9f9",
+  "@media (max-width: 640px)": {
+    padding: "8px",
+  },
 });
 
 export const MessageBubble = styled("div")<{ isUser?: boolean }>(({ isUser }) => ({
   display: "flex",
   justifyContent: isUser ? "flex-end" : "flex-start",
   margin: "10px 0",
+  "@media (max-width: 640px)": {
+    margin: "8px 0",
+  },
 }));
 
 export const BubbleContent = styled("div")<{ isUser?: boolean }>(({ isUser }) => ({
@@ -151,6 +212,7 @@ export const BubbleContent = styled("div")<{ isUser?: boolean }>(({ isUser }) =>
   border: isUser ? "none" : "2px solid #ccc",
   boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
   position: "relative",
+  fontSize: "14px",
   "&:before": {
     content: '""',
     position: "absolute",
@@ -164,6 +226,13 @@ export const BubbleContent = styled("div")<{ isUser?: boolean }>(({ isUser }) =>
     top: "50%",
     transform: "translateY(-50%)",
     left: isUser ? "100%" : "-10px",
+  },
+  "@media (max-width: 640px)": {
+    padding: "8px",
+    fontSize: "12px", // Kecilkan teks di HP
+    "&:before": {
+      borderWidth: isUser ? "8px 0 8px 8px" : "8px 8px 8px 0", // Kecilkan ekor bubble
+    },
   },
 }));
 
@@ -188,12 +257,25 @@ export const ChatbotInput = styled("div")({
     borderRadius: "5px",
     cursor: "pointer",
     fontWeight: "bold",
+    fontSize: "14px",
     "&:disabled": {
       background: "#ccc",
       cursor: "not-allowed",
     },
     "&:hover:not(:disabled)": {
       background: "#ffde4d",
+    },
+  },
+  "@media (max-width: 640px)": {
+    padding: "8px",
+    gap: "3px",
+    input: {
+      padding: "6px",
+      fontSize: "12px",
+    },
+    button: {
+      padding: "6px 10px",
+      fontSize: "12px",
     },
   },
 });
