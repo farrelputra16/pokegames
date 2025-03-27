@@ -99,7 +99,6 @@ const DetailPokemon = () => {
   const [enemyPosition, setEnemyPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isJumping, setIsJumping] = useState<boolean>(false);
   const [isDodging, setIsDodging] = useState<boolean>(false);
-  // @ts-ignore
   const [enemyAttackWindow, setEnemyAttackWindow] = useState<boolean>(false);
 
   const typeEffectiveness: { [key: string]: { [key: string]: number } } = {
@@ -358,14 +357,12 @@ const DetailPokemon = () => {
     }
   };
 
-  const handleJoystickStop = () => {
-    // Tidak ada logika dodge di joystick
-  };
+  const handleJoystickStop = () => {};
 
   const handleDodge = () => {
     if (isAttacking) return;
     setIsDodging(true);
-    setTimeout(() => setIsDodging(false), 1000); // Dodge aktif selama 1 detik
+    setTimeout(() => setIsDodging(false), 1000);
   };
 
   async function catchPokemon() {
@@ -505,8 +502,8 @@ const DetailPokemon = () => {
               <PokemonAvatar 
                 src={playerPokemon?.sprite} 
                 alt={playerPokemon?.nickname || "Your Pokémon"} 
-                width={window.innerWidth <= 768 ? 150 : 300} 
-                height={window.innerWidth <= 768 ? 150 : 300} 
+                width={window.innerWidth <= 768 ? 120 : 300} 
+                height={window.innerWidth <= 768 ? 120 : 300} 
               />
             </T.PokemonBattleWrapper>
             <T.PokemonBattleWrapper
@@ -520,8 +517,8 @@ const DetailPokemon = () => {
               <PokemonAvatar 
                 src={sprite} 
                 alt={`Wild ${name}`} 
-                width={window.innerWidth <= 768 ? 150 : 300} 
-                height={window.innerWidth <= 768 ? 150 : 300} 
+                width={window.innerWidth <= 768 ? 120 : 300} 
+                height={window.innerWidth <= 768 ? 120 : 300} 
               />
             </T.PokemonBattleWrapper>
           </T.BattleContainer>
@@ -536,10 +533,7 @@ const DetailPokemon = () => {
                 ? "Controls: W (Jump), A (Left), D (Right), S (Hold to Dodge), Enter (Attack)"
                 : "Use joystick to move/jump, buttons to attack/dodge"}
             </Text>
-            <Button variant="light" onClick={closeBattle} size="lg">
-              Exit Battle
-            </Button>
-            {window.innerWidth <= 768 && (
+            {window.innerWidth <= 768 ? (
               <T.MobileControls>
                 <Joystick
                   size={80}
@@ -563,8 +557,20 @@ const DetailPokemon = () => {
                   >
                     Dodge
                   </Button>
+                  <Button 
+                    variant="light" 
+                    onClick={closeBattle} 
+                    size="lg" 
+                    style={{ width: "120px" }}
+                  >
+                    Exit
+                  </Button>
                 </div>
               </T.MobileControls>
+            ) : (
+              <Button variant="light" onClick={closeBattle} size="lg">
+                Exit Battle
+              </Button>
             )}
           </T.BattleControls>
         </T.BattleModal>

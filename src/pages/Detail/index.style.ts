@@ -244,8 +244,7 @@ const BattleModal = styled("div")({
   display: "flex",
   flexDirection: "column",
   justifyContent: "space-between",
-  alignItems: "center",
-  padding: "20px",
+  padding: "10px",
   zIndex: 1000,
   animation: `${battleStart} 0.5s ease-in-out`,
   boxShadow: "inset 0 0 50px rgba(0,0,0,0.7)",
@@ -253,17 +252,17 @@ const BattleModal = styled("div")({
 
 const BattleContainer = styled("div")({
   display: "flex",
-  justifyContent: "space-between",
-  alignItems: "flex-end",
+  justifyContent: "space-around",
+  alignItems: "center",
   width: "100%",
   maxWidth: "1200px",
-  padding: "0 20px",
+  padding: "0 10px",
   flex: 1,
   "@media (max-width: 768px)": {
-    padding: "0 10px",
     flexDirection: "column",
-    alignItems: "center",
+    justifyContent: "center",
     gap: "20px",
+    padding: "0 5px",
   },
 });
 
@@ -323,8 +322,8 @@ const PokemonBattleWrapper = styled("div")<{
   "&::after": {
     content: '""',
     position: "absolute",
-    width: "100%",
-    height: "20px",
+    width: "80%",
+    height: "15px",
     bottom: "-10px",
     background: "rgba(0, 0, 0, 0.3)",
     borderRadius: "50%",
@@ -335,19 +334,19 @@ const PokemonBattleWrapper = styled("div")<{
 
 const BattleLog = styled("div")({
   width: "100%",
-  maxWidth: "800px",
-  maxHeight: "150px",
+  maxWidth: "600px",
+  maxHeight: "100px",
   overflowY: "auto",
   background: "rgba(0, 0, 0, 0.8)",
   border: "4px solid #fff",
   borderRadius: "10px",
-  padding: "15px",
-  margin: "20px 0",
+  padding: "10px",
+  margin: "10px auto",
   boxShadow: "0 0 15px rgba(255,255,255,0.3)",
   textAlign: "center",
   "@media (max-width: 768px)": {
-    maxHeight: "100px",
-    margin: "10px 0",
+    maxHeight: "80px",
+    margin: "5px auto",
   },
 });
 
@@ -355,12 +354,14 @@ const BattleControls = styled("div")({
   display: "flex",
   flexDirection: "column",
   gap: "10px",
-  padding: "20px",
+  padding: "10px",
   background: "rgba(0, 0, 0, 0.6)",
   borderRadius: "10px",
   boxShadow: "0 0 10px rgba(255,255,255,0.2)",
   alignItems: "center",
   width: "100%",
+  maxWidth: "400px",
+  margin: "0 auto",
 });
 
 const MobileControls = styled("div")({
@@ -368,7 +369,7 @@ const MobileControls = styled("div")({
   justifyContent: "space-between",
   alignItems: "center",
   width: "100%",
-  maxWidth: "400px",
+  maxWidth: "360px",
   marginTop: "10px",
 });
 
