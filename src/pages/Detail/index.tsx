@@ -503,8 +503,8 @@ const DetailPokemon = () => {
               <PokemonAvatar 
                 src={playerPokemon?.sprite} 
                 alt={playerPokemon?.nickname || "Your Pokémon"} 
-                width={window.innerWidth <= 768 ? 120 : 300} 
-                height={window.innerWidth <= 768 ? 120 : 300} 
+                width={window.innerWidth <= 768 ? 100 : 300} 
+                height={window.innerWidth <= 768 ? 100 : 300} 
               />
             </T.PokemonBattleWrapper>
             <T.PokemonBattleWrapper
@@ -518,8 +518,8 @@ const DetailPokemon = () => {
               <PokemonAvatar 
                 src={sprite} 
                 alt={`Wild ${name}`} 
-                width={window.innerWidth <= 768 ? 120 : 300} 
-                height={window.innerWidth <= 768 ? 120 : 300} 
+                width={window.innerWidth <= 768 ? 100 : 300} 
+                height={window.innerWidth <= 768 ? 100 : 300} 
               />
             </T.PokemonBattleWrapper>
           </T.BattleContainer>

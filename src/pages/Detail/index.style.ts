@@ -252,16 +252,14 @@ const BattleModal = styled("div")({
 
 const BattleContainer = styled("div")({
   display: "flex",
-  justifyContent: "space-around",
-  alignItems: "center",
+  justifyContent: "space-between",
+  alignItems: "flex-end",
   width: "100%",
   maxWidth: "1200px",
   padding: "0 10px",
   flex: 1,
   "@media (max-width: 768px)": {
-    flexDirection: "column",
-    justifyContent: "center",
-    gap: "20px",
+    justifyContent: "space-between",
     padding: "0 5px",
   },
 });
@@ -276,6 +274,9 @@ const PokemonBattleWrapper = styled("div")<{
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
+  "@media (max-width: 768px)": {
+    flex: 1,
+  },
   "&:first-of-type": { // Pemain
     ...(isAttacking === "charge" && {
       animation: `${chargePlayer} 0.5s ease-in-out`,
