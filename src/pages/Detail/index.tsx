@@ -84,7 +84,6 @@ const DetailPokemon = () => {
   const [nicknameModal, setNicknameModal] = useState<boolean>(false);
   const [nicknameIsValid, setNicknameIsValid] = useState<boolean>(true);
 
-  // Battle states
   const [isFighting, setIsFighting] = useState<boolean>(false);
   const [playerPokemon, setPlayerPokemon] = useState<MyPokemon | null>(null);
   const [battleLog, setBattleLog] = useState<string[]>([]);
@@ -357,11 +356,16 @@ const DetailPokemon = () => {
       setIsJumping(true);
       setTimeout(() => setIsJumping(false), 500);
     }
-    setIsDodging(event.y > 0.5);
   };
 
   const handleJoystickStop = () => {
-    setIsDodging(false);
+    // Tidak ada logika dodge di joystick
+  };
+
+  const handleDodge = () => {
+    if (isAttacking) return;
+    setIsDodging(true);
+    setTimeout(() => setIsDodging(false), 1000); // Dodge aktif selama 1 detik
   };
 
   async function catchPokemon() {
@@ -376,7 +380,6 @@ const DetailPokemon = () => {
   async function throwPokeball() {
     const currentCollection = JSON.parse(localStorage.getItem("pokegames@myPokemon") || "[]");
     
-    // Jika belum punya Pokémon atau kurang dari 3, izinkan catch langsung
     if (currentCollection.length < 3) {
       setIsCatching(true);
       const isCaught = await catchPokemon();
@@ -395,11 +398,9 @@ const DetailPokemon = () => {
         if (isCaught) setNicknameModal(true);
       }, 1200);
     } else if (enemyHP > 0) {
-      // Jika sudah punya 3 Pokémon, harus kalahkan musuh dulu
       toast.error("You must defeat the Pokémon first! You've caught your initial 3 Pokémon.");
       return;
     } else {
-      // Normal catch flow setelah bertarung
       setIsCatching(true);
       const isCaught = await catchPokemon();
       setIsCatching(false);
@@ -497,11 +498,16 @@ const DetailPokemon = () => {
               isAttacking={isAttacking}
               isFainted={playerHP <= 0}
               isDodging={isDodging}
-              style={{ transform: `translate(${playerPosition.x}px, ${isJumping ? -100 : playerPosition.y}px)` }}
+              style={{ transform: `translate(${playerPosition.x}px, ${isJumping ? -50 : playerPosition.y}px)` }}
             >
               <Text variant="outlined" size="lg">{playerPokemon?.nickname || "Your Pokémon"}</Text>
               <HealthBar hp={playerHP} maxHP={playerMaxHP} />
-              <PokemonAvatar src={playerPokemon?.sprite} alt={playerPokemon?.nickname || "Your Pokémon"} width={300} height={300} />
+              <PokemonAvatar 
+                src={playerPokemon?.sprite} 
+                alt={playerPokemon?.nickname || "Your Pokémon"} 
+                width={window.innerWidth <= 768 ? 150 : 300} 
+                height={window.innerWidth <= 768 ? 150 : 300} 
+              />
             </T.PokemonBattleWrapper>
             <T.PokemonBattleWrapper
               isAttacking={isAttacking}
@@ -511,7 +517,12 @@ const DetailPokemon = () => {
             >
               <Text variant="outlined" size="lg">Wild {name.toUpperCase()}</Text>
               <HealthBar hp={enemyHP} maxHP={enemyMaxHP} />
-              <PokemonAvatar src={sprite} alt={`Wild ${name}`} width={300} height={300} />
+              <PokemonAvatar 
+                src={sprite} 
+                alt={`Wild ${name}`} 
+                width={window.innerWidth <= 768 ? 150 : 300} 
+                height={window.innerWidth <= 768 ? 150 : 300} 
+              />
             </T.PokemonBattleWrapper>
           </T.BattleContainer>
           <T.BattleLog>
@@ -523,7 +534,7 @@ const DetailPokemon = () => {
             <Text variant="outlined">
               {window.innerWidth > 768
                 ? "Controls: W (Jump), A (Left), D (Right), S (Hold to Dodge), Enter (Attack)"
-                : "Use joystick below"}
+                : "Use joystick to move/jump, buttons to attack/dodge"}
             </Text>
             <Button variant="light" onClick={closeBattle} size="lg">
               Exit Battle
@@ -531,13 +542,28 @@ const DetailPokemon = () => {
             {window.innerWidth <= 768 && (
               <T.MobileControls>
                 <Joystick
-                  size={100}
+                  size={80}
                   baseColor="#333"
                   stickColor="#fff"
                   move={handleJoystickMove}
                   stop={handleJoystickStop}
                 />
-                <Button onClick={() => isPlayerTurn && enemyHP > 0 && handlePlayerAttack()} size="lg">Attack</Button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <Button 
+                    onClick={() => isPlayerTurn && enemyHP > 0 && handlePlayerAttack()} 
+                    size="lg" 
+                    style={{ width: "120px" }}
+                  >
+                    Attack
+                  </Button>
+                  <Button 
+                    onClick={handleDodge} 
+                    size="lg" 
+                    style={{ width: "120px" }}
+                  >
+                    Dodge
+                  </Button>
+                </div>
               </T.MobileControls>
             )}
           </T.BattleControls>
@@ -547,7 +573,15 @@ const DetailPokemon = () => {
       <Modal open={isCatching}>
         <T.CatchingModal>
           <T.ImageContainer>
-            <PokemonAvatar src={sprite} alt={name} width={320} height={320} effect="blur" loading="lazy" className="pokemon-dt" />
+            <PokemonAvatar 
+              src={sprite} 
+              alt={name} 
+              width={window.innerWidth <= 768 ? 200 : 320} 
+              height={window.innerWidth <= 768 ? 200 : 320} 
+              effect="blur" 
+              loading="lazy" 
+              className="pokemon-dt" 
+            />
           </T.ImageContainer>
           <div style={{ display: "grid", placeItems: "center" }}>
             <LazyLoadImage className="pokeball" src="/static/pokeball.png" alt="pokeball" width={128} height={128} />
@@ -561,7 +595,15 @@ const DetailPokemon = () => {
           <Modal open={!isCaught} overlay="error">
             <T.PostCatchModal>
               <T.ImageContainer>
-                <LazyLoadImage src={sprite} alt={name} width={320} height={320} effect="blur" loading="lazy" className="pokemon-dt" />
+                <LazyLoadImage 
+                  src={sprite} 
+                  alt={name} 
+                  width={window.innerWidth <= 768 ? 200 : 320} 
+                  height={window.innerWidth <= 768 ? 200 : 320} 
+                  effect="blur" 
+                  loading="lazy" 
+                  className="pokemon-dt" 
+                />
               </T.ImageContainer>
               <LazyLoadImage src="/static/pokeball.png" alt="pokeball" width={128} height={128} />
               <Text variant="outlined" size="xl">Oh no, {name?.toUpperCase()} broke free</Text>
@@ -570,7 +612,15 @@ const DetailPokemon = () => {
           <Modal open={isCaught} overlay="light">
             <T.PostCatchModal>
               <T.ImageContainer>
-                <PokemonAvatar src={sprite} alt={name} width={320} height={320} effect="blur" loading="lazy" className="pokemon-dt" />
+                <PokemonAvatar 
+                  src={sprite} 
+                  alt={name} 
+                  width={window.innerWidth <= 768 ? 200 : 320} 
+                  height={window.innerWidth <= 768 ? 200 : 320} 
+                  effect="blur" 
+                  loading="lazy" 
+                  className="pokemon-dt" 
+                />
               </T.ImageContainer>
               <LazyLoadImage src="/static/pokeball.png" alt="pokeball" width={128} height={128} />
               <Text variant="outlined" size="xl">Gotcha! {name?.toUpperCase()} was caught!</Text>
@@ -582,7 +632,15 @@ const DetailPokemon = () => {
       <Modal open={nicknameModal} overlay="light" solid>
         <T.NicknamingModal>
           <T.ImageContainer>
-            <PokemonAvatar src={sprite} alt={name} width={320} height={320} effect="blur" loading="lazy" className="pokemon-dt" />
+            <PokemonAvatar 
+              src={sprite} 
+              alt={name} 
+              width={window.innerWidth <= 768 ? 200 : 320} 
+              height={window.innerWidth <= 768 ? 200 : 320} 
+              effect="blur" 
+              loading="lazy" 
+              className="pokemon-dt" 
+            />
           </T.ImageContainer>
           {!isSaved ? (
             <T.NicknamingForm onSubmit={onNicknameSave}>
@@ -649,7 +707,15 @@ const DetailPokemon = () => {
           </div>
           <div className="img-pokemon" style={{ display: "flex", justifyContent: "center" }}>
             {!isLoading ? (
-              <PokemonAvatar src={sprite} alt={name} width={256} height={256} effect="blur" loading="lazy" className="pokemon-dt" />
+              <PokemonAvatar 
+                src={sprite} 
+                alt={name} 
+                width={window.innerWidth <= 768 ? 150 : 256} 
+                height={window.innerWidth <= 768 ? 150 : 256} 
+                effect="blur" 
+                loading="lazy" 
+                className="pokemon-dt" 
+              />
             ) : (
               <T.ImageLoadingWrapper>
                 <Loading />
