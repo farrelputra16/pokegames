@@ -87,7 +87,6 @@ const PokemonContainer = styled("div")({
   },
 });
 
-// Keyframes
 const shake = keyframes`
   0% { transform: translate(0, 0) rotate(0); }
   20% { transform: translate(-10px, 0) rotate(-20deg); }
@@ -201,6 +200,10 @@ const ImageLoadingWrapper = styled("div")({
   display: "grid",
   placeItems: "center",
   margin: "0 auto",
+  "@media (max-width: 768px)": {
+    width: 150,
+    height: 150,
+  },
 });
 
 const PokemonStatsWrapper = styled("div")({
@@ -229,7 +232,6 @@ const AnotherWrapper = styled("div")({
   gap: 16,
 });
 
-// Battle Styles
 const BattleModal = styled("div")({
   position: "fixed",
   top: 0,
@@ -255,8 +257,14 @@ const BattleContainer = styled("div")({
   alignItems: "flex-end",
   width: "100%",
   maxWidth: "1200px",
-  padding: "0 40px",
+  padding: "0 20px",
   flex: 1,
+  "@media (max-width: 768px)": {
+    padding: "0 10px",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "20px",
+  },
 });
 
 const PokemonBattleWrapper = styled("div")<{
@@ -276,7 +284,7 @@ const PokemonBattleWrapper = styled("div")<{
     ...(isAttacking === "slash" && {
       animation: `${slashPlayer} 1s ease-in-out`,
     }),
-    ...(isAttacking === "player" && !isFainted && { // Pemain diserang
+    ...(isAttacking === "player" && !isFainted && {
       animation: `${hitShake} 0.3s ease-in-out, ${hitGlow} 0.5s ease-in-out`,
     }),
     ...(isAttacking === "faint" && isFainted && {
@@ -299,7 +307,7 @@ const PokemonBattleWrapper = styled("div")<{
     ...(isAttacking === "slash" && {
       animation: `${slashEnemy} 1s ease-in-out`,
     }),
-    ...(isAttacking === "enemy" && !isFainted && { // Musuh diserang
+    ...(isAttacking === "enemy" && !isFainted && {
       animation: `${hitShake} 0.3s ease-in-out, ${hitGlow} 0.5s ease-in-out`,
     }),
     ...(isAttacking === "faint" && isFainted && {
@@ -337,6 +345,10 @@ const BattleLog = styled("div")({
   margin: "20px 0",
   boxShadow: "0 0 15px rgba(255,255,255,0.3)",
   textAlign: "center",
+  "@media (max-width: 768px)": {
+    maxHeight: "100px",
+    margin: "10px 0",
+  },
 });
 
 const BattleControls = styled("div")({
@@ -348,17 +360,18 @@ const BattleControls = styled("div")({
   borderRadius: "10px",
   boxShadow: "0 0 10px rgba(255,255,255,0.2)",
   alignItems: "center",
+  width: "100%",
 });
 
 const MobileControls = styled("div")({
   display: "flex",
-  flexWrap: "wrap",
-  gap: "10px",
-  justifyContent: "center",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
+  maxWidth: "400px",
   marginTop: "10px",
 });
 
-// Pokémon Selection Styles
 const PokemonSelectionModal = styled("div")({
   display: "flex",
   flexDirection: "column",
@@ -369,6 +382,9 @@ const PokemonSelectionModal = styled("div")({
   boxShadow: "0 0 10px rgba(0,0,0,0.3)",
   width: "80vw",
   maxWidth: "600px",
+  "@media (max-width: 768px)": {
+    width: "90vw",
+  },
 });
 
 const PokemonSelectionGrid = styled("div")({
