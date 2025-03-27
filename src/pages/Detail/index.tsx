@@ -99,6 +99,7 @@ const DetailPokemon = () => {
   const [enemyPosition, setEnemyPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isJumping, setIsJumping] = useState<boolean>(false);
   const [isDodging, setIsDodging] = useState<boolean>(false);
+  // @ts-ignore
   const [enemyAttackWindow, setEnemyAttackWindow] = useState<boolean>(false);
 
   const typeEffectiveness: { [key: string]: { [key: string]: number } } = {
