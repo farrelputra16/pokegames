@@ -212,9 +212,9 @@ const DetailPokemon = () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setBattleLog((prev) => [...prev, `Wild ${name.toUpperCase()} fainted!`]);
       toast.success("You defeated the wild Pokémon! Now you can try to catch it!");
-      closeBattle(); // Langsung tutup battle window saat musuh mati
+      closeBattle();
     } else {
-      setIsAttacking("enemy"); // Efek putih pada musuh yang diserang
+      setIsAttacking("enemy");
       await new Promise((resolve) => setTimeout(resolve, 500));
       setIsAttacking(null);
       setIsPlayerTurn(false);
@@ -253,9 +253,9 @@ const DetailPokemon = () => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         setBattleLog((prev) => [...prev, `Your ${playerPokemon.nickname} fainted!`]);
         toast.error("Your Pokémon fainted!");
-        closeBattle(); // Langsung tutup battle window saat pemain mati
+        closeBattle();
       } else {
-        setIsAttacking("player"); // Efek putih pada pemain yang diserang
+        setIsAttacking("player");
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
@@ -265,7 +265,6 @@ const DetailPokemon = () => {
     if (playerHP > 0) setIsPlayerTurn(true);
   };
 
-  // AI Musuh Bergerak
   useEffect(() => {
     if (!isFighting || isAttacking) return;
 
@@ -288,7 +287,7 @@ const DetailPokemon = () => {
 
   const startBattle = () => {
     if (myPokemons.length === 0) {
-      toast.error("You need to catch at least one Pokémon first!");
+      toast.error("You need to catch at least one Pokémon first! Catch up to 3 Pokémon to start battling.");
       return;
     }
     setShowPokemonSelection(true);
@@ -306,7 +305,6 @@ const DetailPokemon = () => {
     setIsPlayerTurn(true);
   };
 
-  // Kontrol Keyboard untuk Desktop
   useEffect(() => {
     if (!isFighting || window.innerWidth <= 768) return;
 
@@ -349,7 +347,6 @@ const DetailPokemon = () => {
     };
   }, [isFighting, isAttacking, isPlayerTurn, playerPosition, isJumping, enemyHP]);
 
-  // Kontrol Joystick untuk Mobile
   const handleJoystickMove = (event: any) => {
     if (isAttacking) return;
     setPlayerPosition((prev) => ({
@@ -360,7 +357,7 @@ const DetailPokemon = () => {
       setIsJumping(true);
       setTimeout(() => setIsJumping(false), 500);
     }
-    setIsDodging(event.y > 0.5); // Dodge saat joystick ke bawah
+    setIsDodging(event.y > 0.5);
   };
 
   const handleJoystickStop = () => {
@@ -377,26 +374,49 @@ const DetailPokemon = () => {
   }
 
   async function throwPokeball() {
-    if (enemyHP > 0) {
-      toast.error("You must defeat the Pokémon first!");
+    const currentCollection = JSON.parse(localStorage.getItem("pokegames@myPokemon") || "[]");
+    
+    // Jika belum punya Pokémon atau kurang dari 3, izinkan catch langsung
+    if (currentCollection.length < 3) {
+      setIsCatching(true);
+      const isCaught = await catchPokemon();
+      setIsCatching(false);
+      setIsEndPhase(true);
+
+      if (isCaught) {
+        setIsCaught(true);
+      } else {
+        setIsCaught(false);
+      }
+
+      if (throwBallTimeout.current) clearTimeout(throwBallTimeout.current as number);
+      throwBallTimeout.current = setTimeout(() => {
+        setIsEndPhase(false);
+        if (isCaught) setNicknameModal(true);
+      }, 1200);
+    } else if (enemyHP > 0) {
+      // Jika sudah punya 3 Pokémon, harus kalahkan musuh dulu
+      toast.error("You must defeat the Pokémon first! You've caught your initial 3 Pokémon.");
       return;
-    }
-    setIsCatching(true);
-    const isCaught = await catchPokemon();
-    setIsCatching(false);
-    setIsEndPhase(true);
-
-    if (isCaught) {
-      setIsCaught(true);
     } else {
-      setIsCaught(false);
-    }
+      // Normal catch flow setelah bertarung
+      setIsCatching(true);
+      const isCaught = await catchPokemon();
+      setIsCatching(false);
+      setIsEndPhase(true);
 
-    if (throwBallTimeout.current) clearTimeout(throwBallTimeout.current as number);
-    throwBallTimeout.current = setTimeout(() => {
-      setIsEndPhase(false);
-      isCaught && setNicknameModal(true);
-    }, 1200);
+      if (isCaught) {
+        setIsCaught(true);
+      } else {
+        setIsCaught(false);
+      }
+
+      if (throwBallTimeout.current) clearTimeout(throwBallTimeout.current as number);
+      throwBallTimeout.current = setTimeout(() => {
+        setIsEndPhase(false);
+        if (isCaught) setNicknameModal(true);
+      }, 1200);
+    }
   }
 
   async function onNicknameSave(e: FormEvent) {
@@ -451,7 +471,6 @@ const DetailPokemon = () => {
 
   return (
     <>
-      {/* Pokémon Selection Modal */}
       <Modal open={showPokemonSelection} overlay="light">
         <T.PokemonSelectionModal>
           <Text as="h2" variant="outlined" size="lg">
@@ -471,7 +490,6 @@ const DetailPokemon = () => {
         </T.PokemonSelectionModal>
       </Modal>
 
-      {/* Battle Modal */}
       {isFighting && (
         <T.BattleModal>
           <T.BattleContainer>
@@ -526,7 +544,6 @@ const DetailPokemon = () => {
         </T.BattleModal>
       )}
 
-      {/* Catching Modal */}
       <Modal open={isCatching}>
         <T.CatchingModal>
           <T.ImageContainer>
@@ -539,7 +556,6 @@ const DetailPokemon = () => {
         </T.CatchingModal>
       </Modal>
 
-      {/* Post-Catch Modals */}
       {isEndPhase && (
         <>
           <Modal open={!isCaught} overlay="error">
@@ -563,7 +579,6 @@ const DetailPokemon = () => {
         </>
       )}
 
-      {/* Nicknaming Modal */}
       <Modal open={nicknameModal} overlay="light" solid>
         <T.NicknamingModal>
           <T.ImageContainer>
@@ -607,7 +622,6 @@ const DetailPokemon = () => {
         </T.NicknamingModal>
       </Modal>
 
-      {/* Main Page */}
       <T.Page style={{ marginBottom: navHeight }}>
         <LazyLoadImage
           id="pokeball-bg"
@@ -699,7 +713,7 @@ const DetailPokemon = () => {
               onClick={throwPokeball}
               size="xl"
               icon="/static/pokeball.png"
-              disabled={enemyHP > 0 || isFighting}
+              disabled={isFighting || (myPokemons.length >= 3 && enemyHP > 0)}
             >
               Catch
             </Button>
