@@ -16,7 +16,6 @@ import "react-lazy-load-image-component/src/effects/blur.css";
 import * as T from "./index.style";
 import { getDetailPokemon } from "../../services/pokemon";
 
-// Tipe kustom untuk ScreenOrientation dengan lock dan unlock
 interface CustomScreenOrientation {
   lock?: (orientation: string) => Promise<void>;
   unlock?: () => Promise<void>;
@@ -45,6 +44,8 @@ const PokemonAvatar = styled(LazyLoadImage)`
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;
+  position: relative;
+  z-index: 10;
 `;
 
 const HealthBar = styled("div")<{ hp: number; maxHP: number }>`
@@ -71,6 +72,13 @@ const HealthBar = styled("div")<{ hp: number; maxHP: number }>`
     width: 120px;
     height: 20px;
   }
+`;
+
+const EffectImage = styled(LazyLoadImage)<{ isHitEffect?: boolean }>`
+  position: absolute;
+  width: ${({ isHitEffect }) => (isHitEffect ? (window.innerWidth <= 1024 ? "225px" : "450px") : (window.innerWidth <= 1024 ? "150px" : "300px"))};
+  height: ${({ isHitEffect }) => (isHitEffect ? (window.innerWidth <= 1024 ? "225px" : "450px") : (window.innerWidth <= 1024 ? "150px" : "300px"))};
+  z-index: ${({ isHitEffect }) => (isHitEffect ? "15" : "5")};
 `;
 
 const DetailPokemon = () => {
@@ -104,17 +112,24 @@ const DetailPokemon = () => {
   const [playerHP, setPlayerHP] = useState<number>(0);
   const [enemyMaxHP, setEnemyMaxHP] = useState<number>(0);
   const [playerMaxHP, setPlayerMaxHP] = useState<number>(0);
-  const [isPlayerTurn, setIsPlayerTurn] = useState<boolean>(true);
-  const [isAttacking, setIsAttacking] = useState<"player" | "enemy" | "faint" | "critical" | "dodge" | "charge" | "slash" | null>(null);
+  const [isAttacking, setIsAttacking] = useState<"player" | "enemy" | "faint" | "dodge" | "charge" | "slash" | "quick" | "heavy" | null>(null);
+  const [attackCooldown, setAttackCooldown] = useState<boolean>(false);
+  const [enemyAttackCooldown, setEnemyAttackCooldown] = useState<boolean>(false);
+  const [dodgeCooldown, setDodgeCooldown] = useState<boolean>(false);
+  const [comboCount, setComboCount] = useState<number>(0);
   const [showPokemonSelection, setShowPokemonSelection] = useState<boolean>(false);
   const [myPokemons, setMyPokemons] = useState<MyPokemon[]>([]);
   const [playerPosition, setPlayerPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [enemyPosition, setEnemyPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [enemyPosition, setEnemyPosition] = useState<{ x: number; y: number }>({ x: 400, y: 0 });
   const [isJumping, setIsJumping] = useState<boolean>(false);
   const [isDodging, setIsDodging] = useState<boolean>(false);
   const [showBattleIntro, setShowBattleIntro] = useState<boolean>(true);
   const [currentChatIndex, setCurrentChatIndex] = useState<number>(0);
   const [showTutorial, setShowTutorial] = useState<boolean>(false);
+  const [showAttackEffect, setShowAttackEffect] = useState<boolean>(false);
+  const [showDodgeEffect, setShowDodgeEffect] = useState<boolean>(false);
+  const [showHitEffectPlayer, setShowHitEffectPlayer] = useState<boolean>(false);
+  const [showHitEffectEnemy, setShowHitEffectEnemy] = useState<boolean>(false);
 
   const typeEffectiveness: { [key: string]: { [key: string]: number } } = {
     fire: { grass: 2, water: 0.5, fire: 0.5, bug: 2, ice: 2 },
@@ -130,8 +145,8 @@ const DetailPokemon = () => {
     { speaker: "player", text: "Alright, let’s see who’s stronger!" },
   ];
 
-  const tutorialMessage = "Move with joystick (left), jump by pushing up, attack or dodge with buttons (right)!";
-  const desktopTutorialMessage = "Use Arrow keys to move, Space to attack, D to dodge!";
+  const tutorialMessage = "Move with joystick (left), jump by pushing up, attack (A) or dodge (D) with buttons (right)!";
+  const desktopTutorialMessage = "Use Arrow keys to move, A to attack, D to dodge, Escape to exit!";
 
   async function loadPokemon() {
     try {
@@ -146,8 +161,8 @@ const DetailPokemon = () => {
       setStats(response?.stats as Stat[]);
       setAbilities(response?.abilities);
       const hpStat = response?.stats.find((stat: Stat) => stat.stat.name === "hp");
-      setEnemyHP(hpStat?.base_stat || 100);
-      setEnemyMaxHP(hpStat?.base_stat || 100);
+      setEnemyHP((hpStat?.base_stat || 100) * 5);
+      setEnemyMaxHP((hpStat?.base_stat || 100) * 5);
       setIsLoading(false);
     } catch (error) {
       toast("Oops!. Fail get pokemons. Please try again!");
@@ -201,14 +216,13 @@ const DetailPokemon = () => {
   const selectPokemonForBattle = (pokemon: MyPokemon) => {
     setPlayerPokemon(pokemon);
     const hpStat = pokemon.stats?.find((stat) => stat.stat.name === "hp");
-    setPlayerHP(hpStat?.base_stat || 100);
-    setPlayerMaxHP(hpStat?.base_stat || 100);
+    setPlayerHP((hpStat?.base_stat || 100) * 3);
+    setPlayerMaxHP((hpStat?.base_stat || 100) * 3);
     setShowPokemonSelection(false);
     setIsFighting(true);
-    setIsPlayerTurn(true);
     setIsAttacking(null);
     setPlayerPosition({ x: 0, y: 0 });
-    setEnemyPosition({ x: 0, y: 0 });
+    setEnemyPosition({ x: 400, y: 0 });
     setShowBattleIntro(true);
     setCurrentChatIndex(0);
     lockOrientation();
@@ -234,6 +248,8 @@ const DetailPokemon = () => {
     defenderStats: Stat[],
     attackerType: string,
     defenderType: string,
+    attackType: "normal" | "quick" | "heavy" = "normal",
+    comboMultiplier: number = 1,
   ) => {
     const attack = attackerStats.find((stat) => stat.stat.name === "attack")?.base_stat || 50;
     const defense = defenderStats.find((stat) => stat.stat.name === "defense")?.base_stat || 50;
@@ -244,107 +260,111 @@ const DetailPokemon = () => {
       effectiveness = typeEffectiveness[attackerType][defenderType];
     }
 
-    const basePower = 40;
-    const damage = Math.floor(((attack / defense) * basePower * effectiveness) + speed / 20);
-    const variance = Math.floor(Math.random() * 10 - 5);
-    const isCritical = Math.random() < 0.1;
-    const finalDamage = isCritical ? damage * 2 : damage + variance;
-    return Math.max(10, finalDamage);
+    const basePower = attackType === "quick" ? 20 : attackType === "heavy" ? 40 : 20;
+    const damage = Math.floor(((attack / defense) * basePower * effectiveness * comboMultiplier) + speed / 40);
+    const variance = Math.floor(Math.random() * 5 - 2);
+    const finalDamage = damage + variance;
+    return Math.max(5, finalDamage);
   };
 
   const handlePlayerAttack = async () => {
-    if (!isPlayerTurn || isAttacking || !playerPokemon) return;
-
-    setIsAttacking("charge");
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsAttacking("slash");
-    const damage = calculateDamage(playerPokemon.stats!, stats, playerPokemon.types![0], types[0]);
-    const isCritical = damage > calculateDamage(playerPokemon.stats!, stats, playerPokemon.types![0], types[0]) * 1.5;
-
-    const newEnemyHP = Math.max(0, enemyHP - damage);
-    setEnemyHP(newEnemyHP);
-
-    if (isCritical) {
-      setIsAttacking("critical");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (attackCooldown || !playerPokemon || enemyHP <= 0) {
+      console.log("Attack blocked:", { attackCooldown, playerPokemonExists: !!playerPokemon, enemyHP });
+      return;
     }
+
+    setAttackCooldown(true);
+    setIsAttacking("slash");
+    setShowAttackEffect(true);
+
+    const comboMultiplier = comboCount >= 3 ? 1.5 : 1;
+    const damage = calculateDamage(playerPokemon.stats!, stats, playerPokemon.types![0], types[0], "normal", comboMultiplier);
+    const newEnemyHP = Math.max(0, enemyHP - damage);
+
+    setEnemyHP(newEnemyHP);
+    setComboCount((prev) => prev + 1);
+    setPlayerPosition((prev) => ({ ...prev, x: Math.min(prev.x + 50, 500) }));
+    setShowHitEffectEnemy(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     if (newEnemyHP <= 0) {
       setIsAttacking("faint");
       await new Promise((resolve) => setTimeout(resolve, 1000));
       toast.success("You defeated the wild Pokémon! Now you can try to catch it!");
       closeBattle();
-    } else {
-      setIsAttacking("enemy");
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setIsAttacking(null);
-      setIsPlayerTurn(false);
     }
+
+    setIsAttacking(null);
+    setShowAttackEffect(false);
+    setShowHitEffectEnemy(false);
+    setAttackCooldown(false);
+    setTimeout(() => setComboCount(0), 3000);
   };
 
-  const handleEnemyAttack = async () => {
-    if (isPlayerTurn || isAttacking || !playerPokemon) return;
+  const handleEnemyAttack = async (attackType: "quick" | "heavy") => {
+    if (!playerPokemon || playerHP <= 0 || enemyAttackCooldown) return;
 
-    setIsAttacking("charge");
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsAttacking("slash");
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    setEnemyAttackCooldown(true);
+    setIsAttacking(attackType === "quick" ? "quick" : "heavy");
+    setShowAttackEffect(true);
+
+    await new Promise((resolve) => setTimeout(resolve, attackType === "quick" ? 200 : 500));
+    setEnemyPosition((prev) => ({ ...prev, x: Math.max(prev.x - (attackType === "quick" ? 50 : 80), -500) }));
 
     if (isDodging) {
       setIsAttacking("dodge");
+      setShowDodgeEffect(true);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setShowDodgeEffect(false);
     } else {
-      const damage = calculateDamage(stats, playerPokemon.stats!, types[0], playerPokemon.types![0]);
-      const isCritical = damage > calculateDamage(stats, playerPokemon.stats!, types[0], playerPokemon.types![0]) * 1.5;
+      const damage = calculateDamage(stats, playerPokemon.stats!, types[0], playerPokemon.types![0], attackType);
       const newPlayerHP = Math.max(0, playerHP - damage);
       setPlayerHP(newPlayerHP);
+      setShowHitEffectPlayer(true);
 
-      if (isCritical) {
-        setIsAttacking("critical");
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       if (newPlayerHP <= 0) {
         setIsAttacking("faint");
         await new Promise((resolve) => setTimeout(resolve, 1000));
         toast.error("Your Pokémon fainted!");
         closeBattle();
-      } else {
-        setIsAttacking("player");
-        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 
     setIsAttacking(null);
-    if (playerHP > 0) setIsPlayerTurn(true);
+    setShowAttackEffect(false);
+    setShowHitEffectPlayer(false);
+    setEnemyAttackCooldown(false);
   };
 
   useEffect(() => {
-    if (!isFighting || isAttacking || showBattleIntro || showTutorial) return;
+    if (!isFighting || showBattleIntro || showTutorial) return;
 
     const moveEnemy = () => {
       const randomMove = Math.random();
-      const step = 50;
-      if (randomMove < 0.3) {
+      const step = 60;
+      if (randomMove < 0.5) {
         setEnemyPosition((prev) => ({ ...prev, x: Math.max(prev.x - step, -500) }));
-      } else if (randomMove < 0.6) {
+      } else if (randomMove < 0.9) {
         setEnemyPosition((prev) => ({ ...prev, x: Math.min(prev.x + step, 500) }));
       }
-      if (!isPlayerTurn && Math.random() < 0.2 && enemyHP > 0) {
-        handleEnemyAttack();
+
+      const attackChance = Math.random();
+      if (attackChance < 0.4 && enemyHP > 0) {
+        handleEnemyAttack(attackChance < 0.2 ? "quick" : "heavy");
       }
     };
 
-    enemyMoveTimeout.current = setInterval(moveEnemy, 1000);
+    enemyMoveTimeout.current = setInterval(moveEnemy, 600);
     return () => clearInterval(enemyMoveTimeout.current as number);
-  }, [isFighting, isAttacking, isPlayerTurn, enemyHP, showBattleIntro, showTutorial]);
+  }, [isFighting, showBattleIntro, showTutorial, enemyHP]);
 
-  // Kontrol Keyboard untuk Desktop
   useEffect(() => {
     if (!isFighting || showBattleIntro || showTutorial) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isAttacking) return;
-
       switch (event.key) {
         case "ArrowLeft":
           setPlayerPosition((prev) => ({
@@ -364,19 +384,23 @@ const DetailPokemon = () => {
             setTimeout(() => setIsJumping(false), 500);
           }
           break;
-        case " ":
+        case "a":
+        case "A":
           handlePlayerAttack();
           break;
         case "d":
         case "D":
           handleDodge();
           break;
+        case "Escape":
+          closeBattle();
+          break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isFighting, isAttacking, isPlayerTurn, showBattleIntro, showTutorial]);
+  }, [isFighting, isAttacking, showBattleIntro, showTutorial]);
 
   const startBattle = () => {
     if (myPokemons.length === 0) {
@@ -391,17 +415,21 @@ const DetailPokemon = () => {
     setIsAttacking(null);
     setEnemyHP(enemyMaxHP);
     setPlayerHP(playerMaxHP);
-    setPlayerPosition({ x: 0, y: 0 });
-    setEnemyPosition({ x: 0, y: 0 });
     setIsDodging(false);
-    setIsPlayerTurn(true);
+    setComboCount(0);
+    setAttackCooldown(false);
+    setEnemyAttackCooldown(false);
+    setDodgeCooldown(false);
     setShowBattleIntro(false);
     setShowTutorial(false);
+    setShowAttackEffect(false);
+    setShowDodgeEffect(false);
+    setShowHitEffectPlayer(false);
+    setShowHitEffectEnemy(false);
     unlockOrientation();
   };
 
   const handleJoystickMove = (event: any) => {
-    if (isAttacking) return;
     setPlayerPosition((prev) => ({
       x: Math.min(Math.max(prev.x + event.x * 5, -500), 500),
       y: prev.y,
@@ -415,9 +443,15 @@ const DetailPokemon = () => {
   const handleJoystickStop = () => {};
 
   const handleDodge = () => {
-    if (isAttacking) return;
+    if (dodgeCooldown) return;
     setIsDodging(true);
-    setTimeout(() => setIsDodging(false), 1000);
+    setDodgeCooldown(true);
+    setShowDodgeEffect(true);
+    setTimeout(() => {
+      setIsDodging(false);
+      setShowDodgeEffect(false);
+    }, 500);
+    setTimeout(() => setDodgeCooldown(false), 2500);
   };
 
   async function catchPokemon() {
@@ -546,6 +580,14 @@ const DetailPokemon = () => {
 
       {isFighting && (
         <T.BattleModal>
+          <Button 
+            variant="light" 
+            onClick={closeBattle} 
+            size="lg" 
+            style={{ position: "absolute", top: "10px", left: "10px", padding: "4px 8px", fontSize: "12px" }}
+          >
+            Exit
+          </Button>
           {showBattleIntro ? (
             <T.BattleIntroContainer>
               <T.PokemonBattleWrapper
@@ -559,6 +601,7 @@ const DetailPokemon = () => {
                   alt={playerPokemon?.nickname || "Your Pokémon"}
                   width={window.innerWidth <= 1024 ? 150 : 300}
                   height={window.innerWidth <= 1024 ? 150 : 300}
+                  style={{ transform: "scaleX(-1)" }}
                 />
                 {battleIntroChats[currentChatIndex].speaker === "player" && (
                   <T.ChatBubble side="left">
@@ -596,18 +639,44 @@ const DetailPokemon = () => {
                 >
                   <Text variant="outlined" size="lg">{playerPokemon?.nickname || "Your Pokémon"}</Text>
                   <HealthBar hp={playerHP} maxHP={playerMaxHP} />
+                  {showDodgeEffect && (
+                    <EffectImage
+                      src="/static/dodge.png"
+                      alt="dodge effect"
+                      style={{ top: "0", left: "0", zIndex: 5 }}
+                    />
+                  )}
                   <PokemonAvatar 
                     src={playerPokemon?.sprite} 
                     alt={playerPokemon?.nickname || "Your Pokémon"} 
                     width={window.innerWidth <= 1024 ? 150 : 300} 
-                    height={window.innerWidth <= 1024 ? 150 : 300} 
+                    height={window.innerWidth <= 1024 ? 150 : 300}
+                    style={{ transform: "scaleX(-1)" }}
                   />
+                  {showAttackEffect && isAttacking === "slash" && (
+                    <EffectImage
+                      src="/static/attack.png"
+                      alt="attack effect"
+                      style={{ top: "0", left: window.innerWidth <= 1024 ? "150px" : "300px" }}
+                    />
+                  )}
+                  {showHitEffectPlayer && (
+                    <EffectImage
+                      src="/static/effect.png"
+                      alt="hit effect"
+                      isHitEffect={true}
+                      style={{ top: window.innerWidth <= 1024 ? "-37.5px" : "-75px", left: window.innerWidth <= 1024 ? "-37.5px" : "-75px" }}
+                    />
+                  )}
                   {showTutorial && (
                     <T.ChatBubble side="left">
                       <Text variant="outlined">
                         {window.innerWidth < 1024 ? tutorialMessage : desktopTutorialMessage}
                       </Text>
                     </T.ChatBubble>
+                  )}
+                  {comboCount > 0 && (
+                    <T.ComboText>Combo: {comboCount}x</T.ComboText>
                   )}
                 </T.PokemonBattleWrapper>
                 <T.PokemonBattleWrapper
@@ -624,6 +693,21 @@ const DetailPokemon = () => {
                     width={window.innerWidth <= 1024 ? 150 : 300} 
                     height={window.innerWidth <= 1024 ? 150 : 300} 
                   />
+                  {showAttackEffect && (isAttacking === "quick" || isAttacking === "heavy") && (
+                    <EffectImage
+                      src="/static/attack.png"
+                      alt="attack effect"
+                      style={{ top: "0", left: window.innerWidth <= 1024 ? "-150px" : "-300px" }}
+                    />
+                  )}
+                  {showHitEffectEnemy && (
+                    <EffectImage
+                      src="/static/effect.png"
+                      alt="hit effect"
+                      isHitEffect={true}
+                      style={{ top: window.innerWidth <= 1024 ? "-37.5px" : "-75px", left: window.innerWidth <= 1024 ? "-37.5px" : "-75px" }}
+                    />
+                  )}
                 </T.PokemonBattleWrapper>
               </T.BattleContainer>
               <T.BattleControls>
@@ -640,26 +724,20 @@ const DetailPokemon = () => {
                   />
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                     <Button 
-                      onClick={() => isPlayerTurn && enemyHP > 0 && handlePlayerAttack()} 
+                      onClick={handlePlayerAttack} 
                       size="lg" 
                       style={{ width: "120px" }}
+                      disabled={attackCooldown}
                     >
-                      Attack
+                      {attackCooldown ? "Wait..." : "Attack"}
                     </Button>
                     <Button 
                       onClick={handleDodge} 
                       size="lg" 
                       style={{ width: "120px" }}
+                      disabled={dodgeCooldown}
                     >
-                      Dodge
-                    </Button>
-                    <Button 
-                      variant="light" 
-                      onClick={closeBattle} 
-                      size="lg" 
-                      style={{ width: "120px" }}
-                    >
-                      Exit
+                      {dodgeCooldown ? "Wait..." : "Dodge"}
                     </Button>
                   </div>
                 </T.MobileControls>

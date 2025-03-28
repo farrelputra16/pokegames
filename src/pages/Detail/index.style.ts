@@ -96,66 +96,10 @@ const shake = keyframes`
   100% { transform: translate(0, 0) rotate(0); }
 `;
 
-const chargePlayer = keyframes`
-  0% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 #ff0); }
-  50% { transform: scale(1.1); filter: brightness(1.5) drop-shadow(0 0 10px #ff0); }
-  100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 5px #ff0); }
-`;
-
-const slashPlayer = keyframes`
-  0% { transform: translate(0, 0) rotate(0deg); filter: brightness(1); }
-  20% { transform: translate(80px, -20px) rotate(15deg); filter: brightness(1.5) drop-shadow(0 0 15px #ff0); }
-  40% { transform: translate(150px, 0) rotate(0deg); filter: brightness(2) drop-shadow(0 0 20px #ff0); }
-  60% { transform: translate(80px, 20px) rotate(-15deg); filter: brightness(1.5); }
-  100% { transform: translate(0, 0) rotate(0deg); filter: brightness(1); }
-`;
-
-const chargeEnemy = keyframes`
-  0% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 0 #f00); }
-  50% { transform: scale(1.1); filter: brightness(1.5) drop-shadow(0 0 10px #f00); }
-  100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 5px #f00); }
-`;
-
-const slashEnemy = keyframes`
-  0% { transform: translate(0, 0) rotate(0deg); filter: brightness(1); }
-  20% { transform: translate(-80px, -20px) rotate(-15deg); filter: brightness(1.5) drop-shadow(0 0 15px #f00); }
-  40% { transform: translate(-150px, 0) rotate(0deg); filter: brightness(2) drop-shadow(0 0 20px #f00); }
-  60% { transform: translate(-80px, 20px) rotate(15deg); filter: brightness(1.5); }
-  100% { transform: translate(0, 0) rotate(0deg); filter: brightness(1); }
-`;
-
-const hitShake = keyframes`
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(-5px, 5px); }
-  50% { transform: translate(5px, -5px); }
-  75% { transform: translate(-5px, 5px); }
-  100% { transform: translate(0, 0); }
-`;
-
-const hitGlow = keyframes`
-  0% { filter: brightness(1) drop-shadow(0 0 0 #fff); }
-  50% { filter: brightness(1.5) drop-shadow(0 0 20px #fff); }
-  100% { filter: brightness(1) drop-shadow(0 0 0 #fff); }
-`;
-
 const faint = keyframes`
-  0% { transform: translate(0, 0) scale(1); opacity: 1; filter: brightness(1); }
-  50% { transform: translate(0, 40px) scale(0.9); opacity: 0.5; filter: brightness(0.7) grayscale(50%); }
-  100% { transform: translate(0, 80px) scale(0.7); opacity: 0; filter: brightness(0.5) grayscale(100%); }
-`;
-
-const criticalHit = keyframes`
-  0% { transform: scale(1); filter: brightness(1); }
-  20% { transform: scale(1.3); filter: brightness(2) drop-shadow(0 0 25px #ff0); }
-  40% { transform: scale(1.1); filter: brightness(1.5); }
-  60% { transform: scale(1.4); filter: brightness(2.5) drop-shadow(0 0 20px #ff0); }
-  100% { transform: scale(1); filter: brightness(1); }
-`;
-
-const dodgeAura = keyframes`
-  0% { filter: brightness(1) drop-shadow(0 0 5px rgba(0, 255, 0, 0.5)); }
-  50% { filter: brightness(1.2) drop-shadow(0 0 15px rgba(0, 255, 0, 0.8)); }
-  100% { filter: brightness(1) drop-shadow(0 0 5px rgba(0, 255, 0, 0.5)); }
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  50% { transform: translate(0, 40px) scale(0.9); opacity: 0.5; }
+  100% { transform: translate(0, 80px) scale(0.7); opacity: 0; }
 `;
 
 const battleStart = keyframes`
@@ -282,61 +226,21 @@ const BattleIntroContainer = styled("div")({
 });
 
 const PokemonBattleWrapper = styled("div")<{
-  isAttacking: "player" | "enemy" | "faint" | "critical" | "dodge" | "charge" | "slash" | null;
+  isAttacking: "player" | "enemy" | "faint" | "dodge" | "charge" | "slash" | "quick" | "heavy" | null;
   isFainted: boolean;
   isDodging: boolean;
-}>(({ isAttacking, isFainted, isDodging }) => ({
+}>(({ isFainted }) => ({
   position: "relative",
-  transition: "transform 0.1s ease",
+  transition: "transform 0.3s ease-out",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
   "@media (max-width: 1024px)": {
     flex: 1,
   },
-  "&:first-of-type": { // Pemain
-    ...(isAttacking === "charge" && {
-      animation: `${chargePlayer} 0.5s ease-in-out`,
-    }),
-    ...(isAttacking === "slash" && {
-      animation: `${slashPlayer} 1s ease-in-out`,
-    }),
-    ...(isAttacking === "player" && !isFainted && {
-      animation: `${hitShake} 0.3s ease-in-out, ${hitGlow} 0.5s ease-in-out`,
-    }),
-    ...(isAttacking === "faint" && isFainted && {
-      animation: `${faint} 1s ease-in-out forwards`,
-    }),
-    ...(isAttacking === "critical" && !isFainted && {
-      animation: `${criticalHit} 1s ease-in-out`,
-    }),
-    ...(isAttacking === "dodge" && !isFainted && {
-      animation: `${dodgeAura} 1s ease-in-out`,
-    }),
-    ...(isDodging && !isAttacking && {
-      animation: `${dodgeAura} 1.5s infinite ease-in-out`,
-    }),
-  },
-  "&:last-of-type": { // Musuh
-    ...(isAttacking === "charge" && {
-      animation: `${chargeEnemy} 0.5s ease-in-out`,
-    }),
-    ...(isAttacking === "slash" && {
-      animation: `${slashEnemy} 1s ease-in-out`,
-    }),
-    ...(isAttacking === "enemy" && !isFainted && {
-      animation: `${hitShake} 0.3s ease-in-out, ${hitGlow} 0.5s ease-in-out`,
-    }),
-    ...(isAttacking === "faint" && isFainted && {
-      animation: `${faint} 1s ease-in-out forwards`,
-    }),
-    ...(isAttacking === "critical" && !isFainted && {
-      animation: `${criticalHit} 1s ease-in-out`,
-    }),
-    ...(isAttacking === "dodge" && !isFainted && {
-      animation: `${dodgeAura} 1s ease-in-out`,
-    }),
-  },
+  ...(isFainted && {
+    animation: `${faint} 1s ease-in-out forwards`,
+  }),
   "&::after": {
     content: '""',
     position: "absolute",
@@ -347,6 +251,7 @@ const PokemonBattleWrapper = styled("div")<{
     borderRadius: "50%",
     filter: "blur(5px)",
     zIndex: -1,
+    transition: "width 0.3s ease-out",
   },
 }));
 
@@ -379,7 +284,7 @@ const MobileControls = styled("div")({
   width: "100%",
   padding: "0 20px",
   "@media (min-width: 1024px)": {
-    display: "none", // Sembunyikan di desktop
+    display: "none",
   },
 });
 
@@ -450,6 +355,16 @@ const PokemonCard = styled("div")({
   },
 });
 
+const ComboText = styled("div")({
+  position: "absolute",
+  top: "-20px",
+  color: "#ff0",
+  fontSize: "20px",
+  fontWeight: "bold",
+  textShadow: "0 0 5px #000",
+  animation: `${chatBubbleFade} 0.5s ease-in-out`,
+});
+
 export {
   Content,
   Page,
@@ -469,7 +384,7 @@ export {
   BattleModal,
   BattleContainer,
   BattleControls,
-  DesktopControls, // Tambahkan ini
+  DesktopControls,
   MobileControls,
   PokemonBattleWrapper,
   PokemonSelectionModal,
@@ -477,4 +392,5 @@ export {
   PokemonCard,
   BattleIntroContainer,
   ChatBubble,
+  ComboText,
 };
