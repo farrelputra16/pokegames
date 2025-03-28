@@ -100,7 +100,6 @@ const DetailPokemon = () => {
 
   const [isFighting, setIsFighting] = useState<boolean>(false);
   const [playerPokemon, setPlayerPokemon] = useState<MyPokemon | null>(null);
-  const [battleLog, setBattleLog] = useState<string[]>([]);
   const [enemyHP, setEnemyHP] = useState<number>(0);
   const [playerHP, setPlayerHP] = useState<number>(0);
   const [enemyMaxHP, setEnemyMaxHP] = useState<number>(0);
@@ -113,8 +112,9 @@ const DetailPokemon = () => {
   const [enemyPosition, setEnemyPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isJumping, setIsJumping] = useState<boolean>(false);
   const [isDodging, setIsDodging] = useState<boolean>(false);
-  const [showBattleIntro, setShowBattleIntro] = useState<boolean>(true); // State untuk intro chat
-  const [currentChatIndex, setCurrentChatIndex] = useState<number>(0); // Index chat saat ini
+  const [showBattleIntro, setShowBattleIntro] = useState<boolean>(true);
+  const [currentChatIndex, setCurrentChatIndex] = useState<number>(0);
+  const [showTutorial, setShowTutorial] = useState<boolean>(false); // State untuk tutorial
 
   const typeEffectiveness: { [key: string]: { [key: string]: number } } = {
     fire: { grass: 2, water: 0.5, fire: 0.5, bug: 2, ice: 2 },
@@ -124,12 +124,13 @@ const DetailPokemon = () => {
     normal: { rock: 0.5, steel: 0.5 },
   };
 
-  // Daftar chat untuk intro battle
   const battleIntroChats = [
     { speaker: "player", text: "Hey, wild Pokémon! Ready to face me?" },
     { speaker: "enemy", text: "Bring it on! I won’t go down easily!" },
     { speaker: "player", text: "Alright, let’s see who’s stronger!" },
   ];
+
+  const tutorialMessage = "Move with joystick (left), jump by pushing up, attack or dodge with buttons (right)!";
 
   async function loadPokemon() {
     try {
@@ -203,26 +204,26 @@ const DetailPokemon = () => {
     setPlayerMaxHP(hpStat?.base_stat || 100);
     setShowPokemonSelection(false);
     setIsFighting(true);
-    setBattleLog(["Battle started!"]);
     setIsPlayerTurn(true);
     setIsAttacking(null);
     setPlayerPosition({ x: 0, y: 0 });
     setEnemyPosition({ x: 0, y: 0 });
-    setShowBattleIntro(true); // Tampilkan intro chat
-    setCurrentChatIndex(0); // Mulai dari chat pertama
+    setShowBattleIntro(true);
+    setCurrentChatIndex(0);
     lockOrientation();
   };
 
-  // Logika untuk menampilkan chat secara berurutan
   useEffect(() => {
     if (showBattleIntro && isFighting) {
       const timer = setTimeout(() => {
         if (currentChatIndex < battleIntroChats.length - 1) {
           setCurrentChatIndex((prev) => prev + 1);
         } else {
-          setShowBattleIntro(false); // Selesai menampilkan chat, mulai battle
+          setShowBattleIntro(false);
+          setShowTutorial(true); // Tampilkan tutorial setelah intro selesai
+          setTimeout(() => setShowTutorial(false), 3000); // Tutorial hilang setelah 3 detik
         }
-      }, 2000); // Setiap chat muncul selama 2 detik
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [showBattleIntro, currentChatIndex, isFighting]);
@@ -261,10 +262,6 @@ const DetailPokemon = () => {
 
     const newEnemyHP = Math.max(0, enemyHP - damage);
     setEnemyHP(newEnemyHP);
-    setBattleLog((prev) => [
-      ...prev,
-      `Your ${playerPokemon.nickname} dealt ${damage} damage!${isCritical ? " Critical hit!" : ""}`,
-    ]);
 
     if (isCritical) {
       setIsAttacking("critical");
@@ -274,7 +271,6 @@ const DetailPokemon = () => {
     if (newEnemyHP <= 0) {
       setIsAttacking("faint");
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      setBattleLog((prev) => [...prev, `Wild ${name.toUpperCase()} fainted!`]);
       toast.success("You defeated the wild Pokémon! Now you can try to catch it!");
       closeBattle();
     } else {
@@ -295,16 +291,11 @@ const DetailPokemon = () => {
 
     if (isDodging) {
       setIsAttacking("dodge");
-      setBattleLog((prev) => [...prev, `Your ${playerPokemon.nickname} dodged the attack!`]);
     } else {
       const damage = calculateDamage(stats, playerPokemon.stats!, types[0], playerPokemon.types![0]);
       const isCritical = damage > calculateDamage(stats, playerPokemon.stats!, types[0], playerPokemon.types![0]) * 1.5;
       const newPlayerHP = Math.max(0, playerHP - damage);
       setPlayerHP(newPlayerHP);
-      setBattleLog((prev) => [
-        ...prev,
-        `${name.toUpperCase()} dealt ${damage} damage!${isCritical ? " Critical hit!" : ""}`,
-      ]);
 
       if (isCritical) {
         setIsAttacking("critical");
@@ -314,7 +305,6 @@ const DetailPokemon = () => {
       if (newPlayerHP <= 0) {
         setIsAttacking("faint");
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        setBattleLog((prev) => [...prev, `Your ${playerPokemon.nickname} fainted!`]);
         toast.error("Your Pokémon fainted!");
         closeBattle();
       } else {
@@ -328,7 +318,7 @@ const DetailPokemon = () => {
   };
 
   useEffect(() => {
-    if (!isFighting || isAttacking || showBattleIntro) return;
+    if (!isFighting || isAttacking || showBattleIntro || showTutorial) return;
 
     const moveEnemy = () => {
       const randomMove = Math.random();
@@ -345,7 +335,7 @@ const DetailPokemon = () => {
 
     enemyMoveTimeout.current = setInterval(moveEnemy, 1000);
     return () => clearInterval(enemyMoveTimeout.current as number);
-  }, [isFighting, isAttacking, isPlayerTurn, enemyHP, showBattleIntro]);
+  }, [isFighting, isAttacking, isPlayerTurn, enemyHP, showBattleIntro, showTutorial]);
 
   const startBattle = () => {
     if (myPokemons.length === 0) {
@@ -358,7 +348,6 @@ const DetailPokemon = () => {
   const closeBattle = () => {
     setIsFighting(false);
     setIsAttacking(null);
-    setBattleLog([]);
     setEnemyHP(enemyMaxHP);
     setPlayerHP(playerMaxHP);
     setPlayerPosition({ x: 0, y: 0 });
@@ -366,6 +355,7 @@ const DetailPokemon = () => {
     setIsDodging(false);
     setIsPlayerTurn(true);
     setShowBattleIntro(false);
+    setShowTutorial(false);
     unlockOrientation();
   };
 
@@ -571,6 +561,11 @@ const DetailPokemon = () => {
                     width={window.innerWidth <= 1024 ? 150 : 300} 
                     height={window.innerWidth <= 1024 ? 150 : 300} 
                   />
+                  {showTutorial && (
+                    <T.ChatBubble side="left">
+                      <Text variant="outlined">{tutorialMessage}</Text>
+                    </T.ChatBubble>
+                  )}
                 </T.PokemonBattleWrapper>
                 <T.PokemonBattleWrapper
                   isAttacking={isAttacking}
@@ -588,15 +583,7 @@ const DetailPokemon = () => {
                   />
                 </T.PokemonBattleWrapper>
               </T.BattleContainer>
-              <T.BattleLog>
-                {battleLog.map((log, index) => (
-                  <Text key={index} variant="outlined">{log}</Text>
-                ))}
-              </T.BattleLog>
               <T.BattleControls>
-                <Text variant="outlined">
-                  Use joystick to move/jump, buttons to attack/dodge
-                </Text>
                 <T.MobileControls>
                   <Joystick
                     size={80}
