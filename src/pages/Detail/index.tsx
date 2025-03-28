@@ -114,7 +114,7 @@ const DetailPokemon = () => {
   const [isDodging, setIsDodging] = useState<boolean>(false);
   const [showBattleIntro, setShowBattleIntro] = useState<boolean>(true);
   const [currentChatIndex, setCurrentChatIndex] = useState<number>(0);
-  const [showTutorial, setShowTutorial] = useState<boolean>(false); // State untuk tutorial
+  const [showTutorial, setShowTutorial] = useState<boolean>(false);
 
   const typeEffectiveness: { [key: string]: { [key: string]: number } } = {
     fire: { grass: 2, water: 0.5, fire: 0.5, bug: 2, ice: 2 },
@@ -131,6 +131,7 @@ const DetailPokemon = () => {
   ];
 
   const tutorialMessage = "Move with joystick (left), jump by pushing up, attack or dodge with buttons (right)!";
+  const desktopTutorialMessage = "Use Arrow keys to move, Space to attack, D to dodge!";
 
   async function loadPokemon() {
     try {
@@ -220,8 +221,8 @@ const DetailPokemon = () => {
           setCurrentChatIndex((prev) => prev + 1);
         } else {
           setShowBattleIntro(false);
-          setShowTutorial(true); // Tampilkan tutorial setelah intro selesai
-          setTimeout(() => setShowTutorial(false), 3000); // Tutorial hilang setelah 3 detik
+          setShowTutorial(true);
+          setTimeout(() => setShowTutorial(false), 3000);
         }
       }, 2000);
       return () => clearTimeout(timer);
@@ -336,6 +337,46 @@ const DetailPokemon = () => {
     enemyMoveTimeout.current = setInterval(moveEnemy, 1000);
     return () => clearInterval(enemyMoveTimeout.current as number);
   }, [isFighting, isAttacking, isPlayerTurn, enemyHP, showBattleIntro, showTutorial]);
+
+  // Kontrol Keyboard untuk Desktop
+  useEffect(() => {
+    if (!isFighting || showBattleIntro || showTutorial) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isAttacking) return;
+
+      switch (event.key) {
+        case "ArrowLeft":
+          setPlayerPosition((prev) => ({
+            ...prev,
+            x: Math.max(prev.x - 10, -500),
+          }));
+          break;
+        case "ArrowRight":
+          setPlayerPosition((prev) => ({
+            ...prev,
+            x: Math.min(prev.x + 10, 500),
+          }));
+          break;
+        case "ArrowUp":
+          if (!isJumping) {
+            setIsJumping(true);
+            setTimeout(() => setIsJumping(false), 500);
+          }
+          break;
+        case " ":
+          handlePlayerAttack();
+          break;
+        case "d":
+        case "D":
+          handleDodge();
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFighting, isAttacking, isPlayerTurn, showBattleIntro, showTutorial]);
 
   const startBattle = () => {
     if (myPokemons.length === 0) {
@@ -563,7 +604,9 @@ const DetailPokemon = () => {
                   />
                   {showTutorial && (
                     <T.ChatBubble side="left">
-                      <Text variant="outlined">{tutorialMessage}</Text>
+                      <Text variant="outlined">
+                        {window.innerWidth < 1024 ? tutorialMessage : desktopTutorialMessage}
+                      </Text>
                     </T.ChatBubble>
                   )}
                 </T.PokemonBattleWrapper>
@@ -584,6 +627,9 @@ const DetailPokemon = () => {
                 </T.PokemonBattleWrapper>
               </T.BattleContainer>
               <T.BattleControls>
+                <T.DesktopControls>
+                  <Text variant="outlined">{desktopTutorialMessage}</Text>
+                </T.DesktopControls>
                 <T.MobileControls>
                   <Joystick
                     size={80}

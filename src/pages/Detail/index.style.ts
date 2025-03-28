@@ -355,12 +355,21 @@ const BattleControls = styled("div")({
   justifyContent: "space-between",
   padding: "10px",
   width: "100%",
-  maxWidth: "none",
   position: "absolute",
   bottom: "20px",
   left: "0",
-  background: "transparent", // Hilangkan kotak
-  border: "none", // Hilangkan border
+  background: "transparent",
+  border: "none",
+});
+
+const DesktopControls = styled("div")({
+  display: "none",
+  justifyContent: "center",
+  alignItems: "center",
+  width: "100%",
+  "@media (min-width: 1024px)": {
+    display: "flex",
+  },
 });
 
 const MobileControls = styled("div")({
@@ -370,8 +379,7 @@ const MobileControls = styled("div")({
   width: "100%",
   padding: "0 20px",
   "@media (min-width: 1024px)": {
-    maxWidth: "600px",
-    margin: "0 auto",
+    display: "none", // Sembunyikan di desktop
   },
 });
 
@@ -461,6 +469,7 @@ export {
   BattleModal,
   BattleContainer,
   BattleControls,
+  DesktopControls, // Tambahkan ini
   MobileControls,
   PokemonBattleWrapper,
   PokemonSelectionModal,
