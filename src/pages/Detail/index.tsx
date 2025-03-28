@@ -16,6 +16,15 @@ import "react-lazy-load-image-component/src/effects/blur.css";
 import * as T from "./index.style";
 import { getDetailPokemon } from "../../services/pokemon";
 
+// Tipe kustom untuk ScreenOrientation dengan lock dan unlock
+interface CustomScreenOrientation {
+  lock?: (orientation: string) => Promise<void>;
+  unlock?: () => Promise<void>;
+  type: string;
+  angle: number;
+  onchange?: ((this: ScreenOrientation, ev: Event) => any) | null;
+}
+
 type TypesPokemon = { type: { name: string } };
 type MovesPokemon = { move: { name: string } };
 
@@ -56,6 +65,11 @@ const HealthBar = styled("div")<{ hp: number; maxHP: number }>`
     height: 100%;
     background: ${({ hp, maxHP }) => (hp / maxHP > 0.5 ? "#4caf50" : hp / maxHP > 0.2 ? "#ff9800" : "#f44336")};
     transition: width 0.5s ease-in-out;
+  }
+
+  @media (max-width: 768px) {
+    width: 120px;
+    height: 20px;
   }
 `;
 
@@ -99,8 +113,8 @@ const DetailPokemon = () => {
   const [enemyPosition, setEnemyPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isJumping, setIsJumping] = useState<boolean>(false);
   const [isDodging, setIsDodging] = useState<boolean>(false);
-  // @ts-ignore
-  const [enemyAttackWindow, setEnemyAttackWindow] = useState<boolean>(false);
+  const [showBattleIntro, setShowBattleIntro] = useState<boolean>(true); // State untuk intro chat
+  const [currentChatIndex, setCurrentChatIndex] = useState<number>(0); // Index chat saat ini
 
   const typeEffectiveness: { [key: string]: { [key: string]: number } } = {
     fire: { grass: 2, water: 0.5, fire: 0.5, bug: 2, ice: 2 },
@@ -109,6 +123,13 @@ const DetailPokemon = () => {
     electric: { water: 2, flying: 2, ground: 0, electric: 0.5 },
     normal: { rock: 0.5, steel: 0.5 },
   };
+
+  // Daftar chat untuk intro battle
+  const battleIntroChats = [
+    { speaker: "player", text: "Hey, wild Pokémon! Ready to face me?" },
+    { speaker: "enemy", text: "Bring it on! I won’t go down easily!" },
+    { speaker: "player", text: "Alright, let’s see who’s stronger!" },
+  ];
 
   async function loadPokemon() {
     try {
@@ -148,6 +169,33 @@ const DetailPokemon = () => {
     setMyPokemons(detailedPokemons);
   }
 
+  const lockOrientation = async () => {
+    if (window.innerWidth <= 1024 && "screen" in window && "orientation" in window.screen) {
+      const orientation = window.screen.orientation as unknown as CustomScreenOrientation;
+      try {
+        if (orientation.lock) {
+          await orientation.lock("landscape");
+        }
+      } catch (err) {
+        toast.error("Please rotate your device to landscape mode for the best battle experience!");
+        console.error("Orientation lock failed:", err);
+      }
+    }
+  };
+
+  const unlockOrientation = async () => {
+    if (window.innerWidth <= 1024 && "screen" in window && "orientation" in window.screen) {
+      const orientation = window.screen.orientation as unknown as CustomScreenOrientation;
+      try {
+        if (orientation.unlock) {
+          await orientation.unlock();
+        }
+      } catch (err) {
+        console.error("Orientation unlock failed:", err);
+      }
+    }
+  };
+
   const selectPokemonForBattle = (pokemon: MyPokemon) => {
     setPlayerPokemon(pokemon);
     const hpStat = pokemon.stats?.find((stat) => stat.stat.name === "hp");
@@ -160,7 +208,24 @@ const DetailPokemon = () => {
     setIsAttacking(null);
     setPlayerPosition({ x: 0, y: 0 });
     setEnemyPosition({ x: 0, y: 0 });
+    setShowBattleIntro(true); // Tampilkan intro chat
+    setCurrentChatIndex(0); // Mulai dari chat pertama
+    lockOrientation();
   };
+
+  // Logika untuk menampilkan chat secara berurutan
+  useEffect(() => {
+    if (showBattleIntro && isFighting) {
+      const timer = setTimeout(() => {
+        if (currentChatIndex < battleIntroChats.length - 1) {
+          setCurrentChatIndex((prev) => prev + 1);
+        } else {
+          setShowBattleIntro(false); // Selesai menampilkan chat, mulai battle
+        }
+      }, 2000); // Setiap chat muncul selama 2 detik
+      return () => clearTimeout(timer);
+    }
+  }, [showBattleIntro, currentChatIndex, isFighting]);
 
   const calculateDamage = (
     attackerStats: Stat[],
@@ -225,7 +290,6 @@ const DetailPokemon = () => {
 
     setIsAttacking("charge");
     await new Promise((resolve) => setTimeout(resolve, 500));
-    setEnemyAttackWindow(true);
     setIsAttacking("slash");
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -259,13 +323,12 @@ const DetailPokemon = () => {
       }
     }
 
-    setEnemyAttackWindow(false);
     setIsAttacking(null);
     if (playerHP > 0) setIsPlayerTurn(true);
   };
 
   useEffect(() => {
-    if (!isFighting || isAttacking) return;
+    if (!isFighting || isAttacking || showBattleIntro) return;
 
     const moveEnemy = () => {
       const randomMove = Math.random();
@@ -282,7 +345,7 @@ const DetailPokemon = () => {
 
     enemyMoveTimeout.current = setInterval(moveEnemy, 1000);
     return () => clearInterval(enemyMoveTimeout.current as number);
-  }, [isFighting, isAttacking, isPlayerTurn, enemyHP]);
+  }, [isFighting, isAttacking, isPlayerTurn, enemyHP, showBattleIntro]);
 
   const startBattle = () => {
     if (myPokemons.length === 0) {
@@ -302,49 +365,9 @@ const DetailPokemon = () => {
     setEnemyPosition({ x: 0, y: 0 });
     setIsDodging(false);
     setIsPlayerTurn(true);
+    setShowBattleIntro(false);
+    unlockOrientation();
   };
-
-  useEffect(() => {
-    if (!isFighting || window.innerWidth <= 768) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (isAttacking) return;
-
-      switch (e.key.toLowerCase()) {
-        case "a":
-          setPlayerPosition((prev) => ({ ...prev, x: Math.max(prev.x - 20, -500) }));
-          break;
-        case "d":
-          setPlayerPosition((prev) => ({ ...prev, x: Math.min(prev.x + 20, 500) }));
-          break;
-        case "w":
-          if (!isJumping) {
-            setIsJumping(true);
-            setTimeout(() => setIsJumping(false), 500);
-          }
-          break;
-        case "s":
-          setIsDodging(true);
-          break;
-        case "enter":
-          if (isPlayerTurn && enemyHP > 0) handlePlayerAttack();
-          break;
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === "s") {
-        setIsDodging(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [isFighting, isAttacking, isPlayerTurn, playerPosition, isJumping, enemyHP]);
 
   const handleJoystickMove = (event: any) => {
     if (isAttacking) return;
@@ -454,6 +477,7 @@ const DetailPokemon = () => {
       setStats([]);
       setSprite("");
       setAbilities([]);
+      unlockOrientation();
     };
   }, []);
 
@@ -491,89 +515,124 @@ const DetailPokemon = () => {
 
       {isFighting && (
         <T.BattleModal>
-          <T.BattleContainer>
-            <T.PokemonBattleWrapper
-              isAttacking={isAttacking}
-              isFainted={playerHP <= 0}
-              isDodging={isDodging}
-              style={{ transform: `translate(${playerPosition.x}px, ${isJumping ? -50 : playerPosition.y}px)` }}
-            >
-              <Text variant="outlined" size="lg">{playerPokemon?.nickname || "Your Pokémon"}</Text>
-              <HealthBar hp={playerHP} maxHP={playerMaxHP} />
-              <PokemonAvatar 
-                src={playerPokemon?.sprite} 
-                alt={playerPokemon?.nickname || "Your Pokémon"} 
-                width={window.innerWidth <= 768 ? 100 : 300} 
-                height={window.innerWidth <= 768 ? 100 : 300} 
-              />
-            </T.PokemonBattleWrapper>
-            <T.PokemonBattleWrapper
-              isAttacking={isAttacking}
-              isFainted={enemyHP <= 0}
-              isDodging={false}
-              style={{ transform: `translate(${enemyPosition.x}px, ${enemyPosition.y}px)` }}
-            >
-              <Text variant="outlined" size="lg">Wild {name.toUpperCase()}</Text>
-              <HealthBar hp={enemyHP} maxHP={enemyMaxHP} />
-              <PokemonAvatar 
-                src={sprite} 
-                alt={`Wild ${name}`} 
-                width={window.innerWidth <= 768 ? 100 : 300} 
-                height={window.innerWidth <= 768 ? 100 : 300} 
-              />
-            </T.PokemonBattleWrapper>
-          </T.BattleContainer>
-          <T.BattleLog>
-            {battleLog.map((log, index) => (
-              <Text key={index} variant="outlined">{log}</Text>
-            ))}
-          </T.BattleLog>
-          <T.BattleControls>
-            <Text variant="outlined">
-              {window.innerWidth > 768
-                ? "Controls: W (Jump), A (Left), D (Right), S (Hold to Dodge), Enter (Attack)"
-                : "Use joystick to move/jump, buttons to attack/dodge"}
-            </Text>
-            {window.innerWidth <= 768 ? (
-              <T.MobileControls>
-                <Joystick
-                  size={80}
-                  baseColor="#333"
-                  stickColor="#fff"
-                  move={handleJoystickMove}
-                  stop={handleJoystickStop}
+          {showBattleIntro ? (
+            <T.BattleIntroContainer>
+              <T.PokemonBattleWrapper
+                isAttacking={null}
+                isFainted={false}
+                isDodging={false}
+                style={{ transform: `translate(${playerPosition.x}px, ${playerPosition.y}px)` }}
+              >
+                <PokemonAvatar
+                  src={playerPokemon?.sprite}
+                  alt={playerPokemon?.nickname || "Your Pokémon"}
+                  width={window.innerWidth <= 1024 ? 150 : 300}
+                  height={window.innerWidth <= 1024 ? 150 : 300}
                 />
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <Button 
-                    onClick={() => isPlayerTurn && enemyHP > 0 && handlePlayerAttack()} 
-                    size="lg" 
-                    style={{ width: "120px" }}
-                  >
-                    Attack
-                  </Button>
-                  <Button 
-                    onClick={handleDodge} 
-                    size="lg" 
-                    style={{ width: "120px" }}
-                  >
-                    Dodge
-                  </Button>
-                  <Button 
-                    variant="light" 
-                    onClick={closeBattle} 
-                    size="lg" 
-                    style={{ width: "120px" }}
-                  >
-                    Exit
-                  </Button>
-                </div>
-              </T.MobileControls>
-            ) : (
-              <Button variant="light" onClick={closeBattle} size="lg">
-                Exit Battle
-              </Button>
-            )}
-          </T.BattleControls>
+                {battleIntroChats[currentChatIndex].speaker === "player" && (
+                  <T.ChatBubble side="left">
+                    <Text variant="outlined">{battleIntroChats[currentChatIndex].text}</Text>
+                  </T.ChatBubble>
+                )}
+              </T.PokemonBattleWrapper>
+              <T.PokemonBattleWrapper
+                isAttacking={null}
+                isFainted={false}
+                isDodging={false}
+                style={{ transform: `translate(${enemyPosition.x}px, ${enemyPosition.y}px)` }}
+              >
+                <PokemonAvatar
+                  src={sprite}
+                  alt={`Wild ${name}`}
+                  width={window.innerWidth <= 1024 ? 150 : 300}
+                  height={window.innerWidth <= 1024 ? 150 : 300}
+                />
+                {battleIntroChats[currentChatIndex].speaker === "enemy" && (
+                  <T.ChatBubble side="right">
+                    <Text variant="outlined">{battleIntroChats[currentChatIndex].text}</Text>
+                  </T.ChatBubble>
+                )}
+              </T.PokemonBattleWrapper>
+            </T.BattleIntroContainer>
+          ) : (
+            <>
+              <T.BattleContainer>
+                <T.PokemonBattleWrapper
+                  isAttacking={isAttacking}
+                  isFainted={playerHP <= 0}
+                  isDodging={isDodging}
+                  style={{ transform: `translate(${playerPosition.x}px, ${isJumping ? -50 : playerPosition.y}px)` }}
+                >
+                  <Text variant="outlined" size="lg">{playerPokemon?.nickname || "Your Pokémon"}</Text>
+                  <HealthBar hp={playerHP} maxHP={playerMaxHP} />
+                  <PokemonAvatar 
+                    src={playerPokemon?.sprite} 
+                    alt={playerPokemon?.nickname || "Your Pokémon"} 
+                    width={window.innerWidth <= 1024 ? 150 : 300} 
+                    height={window.innerWidth <= 1024 ? 150 : 300} 
+                  />
+                </T.PokemonBattleWrapper>
+                <T.PokemonBattleWrapper
+                  isAttacking={isAttacking}
+                  isFainted={enemyHP <= 0}
+                  isDodging={false}
+                  style={{ transform: `translate(${enemyPosition.x}px, ${enemyPosition.y}px)` }}
+                >
+                  <Text variant="outlined" size="lg">Wild {name.toUpperCase()}</Text>
+                  <HealthBar hp={enemyHP} maxHP={enemyMaxHP} />
+                  <PokemonAvatar 
+                    src={sprite} 
+                    alt={`Wild ${name}`} 
+                    width={window.innerWidth <= 1024 ? 150 : 300} 
+                    height={window.innerWidth <= 1024 ? 150 : 300} 
+                  />
+                </T.PokemonBattleWrapper>
+              </T.BattleContainer>
+              <T.BattleLog>
+                {battleLog.map((log, index) => (
+                  <Text key={index} variant="outlined">{log}</Text>
+                ))}
+              </T.BattleLog>
+              <T.BattleControls>
+                <Text variant="outlined">
+                  Use joystick to move/jump, buttons to attack/dodge
+                </Text>
+                <T.MobileControls>
+                  <Joystick
+                    size={80}
+                    baseColor="#333"
+                    stickColor="#fff"
+                    move={handleJoystickMove}
+                    stop={handleJoystickStop}
+                  />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <Button 
+                      onClick={() => isPlayerTurn && enemyHP > 0 && handlePlayerAttack()} 
+                      size="lg" 
+                      style={{ width: "120px" }}
+                    >
+                      Attack
+                    </Button>
+                    <Button 
+                      onClick={handleDodge} 
+                      size="lg" 
+                      style={{ width: "120px" }}
+                    >
+                      Dodge
+                    </Button>
+                    <Button 
+                      variant="light" 
+                      onClick={closeBattle} 
+                      size="lg" 
+                      style={{ width: "120px" }}
+                    >
+                      Exit
+                    </Button>
+                  </div>
+                </T.MobileControls>
+              </T.BattleControls>
+            </>
+          )}
         </T.BattleModal>
       )}
 

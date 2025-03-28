@@ -41,6 +41,52 @@ const PokeName = styled("div")(
   `,
 );
 
+const chatBubbleFade = keyframes`
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+`;
+const BattleIntroContainer = styled("div")({
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  width: "100%",
+  maxWidth: "1200px",
+  padding: "0 20px",
+  flex: 1,
+  "@media (max-width: 1024px)": {
+    padding: "0 10px",
+  },
+});
+const ChatBubble = styled("div")<{ side: "left" | "right" }>((props) => ({
+  position: "absolute",
+  top: "-60px",
+  [props.side]: "10px",
+  background: props.side === "left" ? "rgba(0, 255, 0, 0.9)" : "rgba(255, 0, 0, 0.9)", // Hijau untuk player, merah untuk enemy
+  border: "2px solid #fff",
+  borderRadius: "10px",
+  padding: "10px",
+  maxWidth: "200px",
+  textAlign: "center",
+  boxShadow: "0 0 10px rgba(0,0,0,0.3)",
+  animation: `${chatBubbleFade} 0.5s ease-in-out`,
+  "&:after": {
+    content: '""',
+    position: "absolute",
+    bottom: "-10px",
+    [props.side]: "20px",
+    width: "0",
+    height: "0",
+    borderLeft: "10px solid transparent",
+    borderRight: "10px solid transparent",
+    borderTop: `10px solid ${props.side === "left" ? "rgba(0, 255, 0, 0.9)" : "rgba(255, 0, 0, 0.9)"}`,
+  },
+  "@media (max-width: 768px)": {
+    maxWidth: "150px",
+    top: "-50px",
+    padding: "8px",
+  },
+}));
+
 const Content = styled("div")({
   display: "flex",
   flexDirection: "column",
@@ -244,7 +290,7 @@ const BattleModal = styled("div")({
   display: "flex",
   flexDirection: "column",
   justifyContent: "space-between",
-  padding: "10px",
+  padding: "20px",
   zIndex: 1000,
   animation: `${battleStart} 0.5s ease-in-out`,
   boxShadow: "inset 0 0 50px rgba(0,0,0,0.7)",
@@ -256,11 +302,10 @@ const BattleContainer = styled("div")({
   alignItems: "flex-end",
   width: "100%",
   maxWidth: "1200px",
-  padding: "0 10px",
+  padding: "0 20px",
   flex: 1,
-  "@media (max-width: 768px)": {
-    justifyContent: "space-between",
-    padding: "0 5px",
+  "@media (max-width: 1024px)": {
+    padding: "0 10px",
   },
 });
 
@@ -274,7 +319,7 @@ const PokemonBattleWrapper = styled("div")<{
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  "@media (max-width: 768px)": {
+  "@media (max-width: 1024px)": {
     flex: 1,
   },
   "&:first-of-type": { // Pemain
@@ -336,7 +381,7 @@ const PokemonBattleWrapper = styled("div")<{
 const BattleLog = styled("div")({
   width: "100%",
   maxWidth: "600px",
-  maxHeight: "100px",
+  maxHeight: "120px",
   overflowY: "auto",
   background: "rgba(0, 0, 0, 0.8)",
   border: "4px solid #fff",
@@ -345,7 +390,7 @@ const BattleLog = styled("div")({
   margin: "10px auto",
   boxShadow: "0 0 15px rgba(255,255,255,0.3)",
   textAlign: "center",
-  "@media (max-width: 768px)": {
+  "@media (max-width: 1024px)": {
     maxHeight: "80px",
     margin: "5px auto",
   },
@@ -436,4 +481,6 @@ export {
   PokemonSelectionModal,
   PokemonSelectionGrid,
   PokemonCard,
+  BattleIntroContainer, // Tambahkan ini
+  ChatBubble,
 };
