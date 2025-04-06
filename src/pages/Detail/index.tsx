@@ -113,7 +113,6 @@ const DetailPokemon = () => {
   const [enemyMaxHP, setEnemyMaxHP] = useState<number>(0);
   const [playerMaxHP, setPlayerMaxHP] = useState<number>(0);
   const [isAttacking, setIsAttacking] = useState<"player" | "enemy" | "faint" | "dodge" | "charge" | "slash" | "quick" | "heavy" | null>(null);
-  const [attackCooldown, setAttackCooldown] = useState<boolean>(false);
   const [enemyAttackCooldown, setEnemyAttackCooldown] = useState<boolean>(false);
   const [dodgeCooldown, setDodgeCooldown] = useState<boolean>(false);
   const [comboCount, setComboCount] = useState<number>(0);
@@ -130,6 +129,7 @@ const DetailPokemon = () => {
   const [showDodgeEffect, setShowDodgeEffect] = useState<boolean>(false);
   const [showHitEffectPlayer, setShowHitEffectPlayer] = useState<boolean>(false);
   const [showHitEffectEnemy, setShowHitEffectEnemy] = useState<boolean>(false);
+  const [isDefeated, setIsDefeated] = useState<boolean>(false); // State baru untuk melacak apakah Pokémon dikalahkan
 
   const typeEffectiveness: { [key: string]: { [key: string]: number } } = {
     fire: { grass: 2, water: 0.5, fire: 0.5, bug: 2, ice: 2 },
@@ -268,38 +268,42 @@ const DetailPokemon = () => {
   };
 
   const handlePlayerAttack = async () => {
-    if (attackCooldown || !playerPokemon || enemyHP <= 0) {
-      console.log("Attack blocked:", { attackCooldown, playerPokemonExists: !!playerPokemon, enemyHP });
+    if (!playerPokemon || enemyHP <= 0) {
+      console.log("Attack blocked:", { playerPokemonExists: !!playerPokemon, enemyHP });
       return;
     }
 
-    setAttackCooldown(true);
-    setIsAttacking("slash");
-    setShowAttackEffect(true);
+    try {
+      setIsAttacking("slash");
+      setShowAttackEffect(true);
 
-    const comboMultiplier = comboCount >= 3 ? 1.5 : 1;
-    const damage = calculateDamage(playerPokemon.stats!, stats, playerPokemon.types![0], types[0], "normal", comboMultiplier);
-    const newEnemyHP = Math.max(0, enemyHP - damage);
+      const comboMultiplier = comboCount >= 3 ? 1.5 : 1;
+      const damage = calculateDamage(playerPokemon.stats!, stats, playerPokemon.types![0], types[0], "normal", comboMultiplier);
+      const newEnemyHP = Math.max(0, enemyHP - damage);
 
-    setEnemyHP(newEnemyHP);
-    setComboCount((prev) => prev + 1);
-    setPlayerPosition((prev) => ({ ...prev, x: Math.min(prev.x + 50, 500) }));
-    setShowHitEffectEnemy(true);
+      setEnemyHP(newEnemyHP);
+      setComboCount((prev) => prev + 1);
+      setPlayerPosition((prev) => ({ ...prev, x: Math.min(prev.x + 50, 500) }));
+      setShowHitEffectEnemy(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    if (newEnemyHP <= 0) {
-      setIsAttacking("faint");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success("You defeated the wild Pokémon! Now you can try to catch it!");
-      closeBattle();
+      if (newEnemyHP <= 0) {
+        setIsAttacking("faint");
+        setIsDefeated(true); // Tandai Pokémon sebagai dikalahkan
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        toast.success("You defeated the wild Pokémon! Now you can try to catch it!");
+        closeBattle();
+      }
+
+      setIsAttacking(null);
+      setShowAttackEffect(false);
+      setShowHitEffectEnemy(false);
+    } catch (error) {
+      console.error("Error in handlePlayerAttack:", error);
+    } finally {
+      setTimeout(() => setComboCount(0), 3000);
     }
-
-    setIsAttacking(null);
-    setShowAttackEffect(false);
-    setShowHitEffectEnemy(false);
-    setAttackCooldown(false);
-    setTimeout(() => setComboCount(0), 3000);
   };
 
   const handleEnemyAttack = async (attackType: "quick" | "heavy") => {
@@ -413,11 +417,9 @@ const DetailPokemon = () => {
   const closeBattle = () => {
     setIsFighting(false);
     setIsAttacking(null);
-    setEnemyHP(enemyMaxHP);
     setPlayerHP(playerMaxHP);
     setIsDodging(false);
     setComboCount(0);
-    setAttackCooldown(false);
     setEnemyAttackCooldown(false);
     setDodgeCooldown(false);
     setShowBattleIntro(false);
@@ -465,8 +467,8 @@ const DetailPokemon = () => {
 
   async function throwPokeball() {
     const currentCollection = JSON.parse(localStorage.getItem("pokegames@myPokemon") || "[]");
-    
-    if (currentCollection.length < 3) {
+
+    if (currentCollection.length < 3 || isDefeated) {
       setIsCatching(true);
       const isCaught = await catchPokemon();
       setIsCatching(false);
@@ -482,27 +484,11 @@ const DetailPokemon = () => {
       throwBallTimeout.current = setTimeout(() => {
         setIsEndPhase(false);
         if (isCaught) setNicknameModal(true);
+        setIsDefeated(false);
+        setEnemyHP(enemyMaxHP);
       }, 1200);
-    } else if (enemyHP > 0) {
-      toast.error("You must defeat the Pokémon first! You've caught your initial 3 Pokémon.");
-      return;
     } else {
-      setIsCatching(true);
-      const isCaught = await catchPokemon();
-      setIsCatching(false);
-      setIsEndPhase(true);
-
-      if (isCaught) {
-        setIsCaught(true);
-      } else {
-        setIsCaught(false);
-      }
-
-      if (throwBallTimeout.current) clearTimeout(throwBallTimeout.current as number);
-      throwBallTimeout.current = setTimeout(() => {
-        setIsEndPhase(false);
-        if (isCaught) setNicknameModal(true);
-      }, 1200);
+      toast.error("You must defeat the Pokémon first! You've caught 3 Pokémon already.");
     }
   }
 
@@ -727,9 +713,8 @@ const DetailPokemon = () => {
                       onClick={handlePlayerAttack} 
                       size="lg" 
                       style={{ width: "120px" }}
-                      disabled={attackCooldown}
                     >
-                      {attackCooldown ? "Wait..." : "Attack"}
+                      Attack
                     </Button>
                     <Button 
                       onClick={handleDodge} 
@@ -956,7 +941,7 @@ const DetailPokemon = () => {
               onClick={throwPokeball}
               size="xl"
               icon="/static/pokeball.png"
-              disabled={isFighting || (myPokemons.length >= 3 && enemyHP > 0)}
+              disabled={isFighting}
             >
               Catch
             </Button>
