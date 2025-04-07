@@ -18,7 +18,7 @@ const StartScreen: React.FC = () => {
           Press Start
         </Button>
         <Text variant="outlined" size="base">
-          CA : (Coming Soon){" "}
+          CA : (PoketD63fMajHA8Vf9QHfwRjnUHyx1Ry4apV8JvJtjD){" "}
         </Text>
       </T.Centering>
       <div
